@@ -1,0 +1,31 @@
+scenario: security
+name: 安全场景
+checks:
+  - id: SEC001
+    name: 认证机制
+    question: 认证机制是什么？Session / JWT / OAuth？
+    severity: blocker
+  - id: SEC002
+    name: 权限控制
+    question: 权限控制粒度如何？接口级/数据级？
+    severity: blocker
+  - id: SEC003
+    name: SQL 注入防护
+    question: 是否使用了参数化查询？ORM 防护？
+    severity: blocker
+  - id: SEC004
+    name: XSS 防护
+    question: 是否有 XSS 防护？输入过滤/输出转义？
+    severity: blocker
+  - id: SEC005
+    name: 敏感数据加密
+    question: 敏感数据如何存储？加密算法是什么？
+    severity: blocker
+  - id: SEC006
+    name: API 安全
+    question: API 是否有安全措施？Token 校验/IP 限制/签名？
+    severity: warning
+  - id: SEC007
+    name: HTTPS
+    question: 是否强制使用 HTTPS？证书如何管理？
+    severity: blocker

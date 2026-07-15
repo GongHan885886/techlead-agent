@@ -1,0 +1,31 @@
+scenario: crud
+name: CRUD 操作场景
+checks:
+  - id: C001
+    name: 幂等性设计
+    question: 接口是否支持幂等？如何防止重复提交？
+    severity: blocker
+  - id: C002
+    name: 并发控制
+    question: 是否考虑并发场景？乐观锁/悲观锁策略？
+    severity: blocker
+  - id: C003
+    name: 数据校验
+    question: 参数校验是否完整？校验规则是否合理？
+    severity: blocker
+  - id: C004
+    name: 查询分页
+    question: 列表查询是否支持分页？默认分页大小是多少？
+    severity: blocker
+  - id: C005
+    name: 列表排序
+    question: 列表查询是否支持排序？默认排序规则是什么？
+    severity: warning
+  - id: C006
+    name: 数据权限
+    question: 是否需要数据权限控制？如何实现？
+    severity: warning
+  - id: C007
+    name: 批量操作限制
+    question: 批量操作是否有数量限制？性能如何保证？
+    severity: warning

@@ -1,0 +1,31 @@
+scenario: search
+name: 搜索场景
+checks:
+  - id: S001
+    name: 搜索引擎选型
+    question: 搜索引擎选型是什么？ES / 搜索中间件 / 数据库模糊查询？
+    severity: blocker
+  - id: S002
+    name: 查询性能
+    question: 大数据量查询性能如何保证？是否有分页限制？
+    severity: blocker
+  - id: S003
+    name: 索引设计
+    question: ES 索引结构设计如何？分片/副本策略？
+    severity: blocker
+  - id: S004
+    name: 高亮显示
+    question: 搜索结果是否需要高亮显示？如何实现？
+    severity: warning
+  - id: S005
+    name: 搜索建议
+    question: 是否支持搜索建议/自动补全？
+    severity: warning
+  - id: S006
+    name: 同步机制
+    question: 数据变更如何同步到搜索引擎？实时/批量？
+    severity: blocker
+  - id: S007
+    name: 搜索范围
+    question: 搜索范围是什么？全字段/指定字段/权重配置？
+    severity: warning

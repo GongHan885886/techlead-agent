@@ -1,0 +1,31 @@
+scenario: message-queue
+name: 消息队列场景
+checks:
+  - id: M001
+    name: 消息可靠性
+    question: 是否保证消息不丢失？持久化/副本/ACK 机制？
+    severity: blocker
+  - id: M002
+    name: 幂等性设计
+    question: 消费端是否设计了幂等性？
+    severity: blocker
+  - id: M003
+    name: 死信队列
+    question: 是否有死信队列（DLQ）处理失败消息？
+    severity: blocker
+  - id: M004
+    name: 顺序性保证
+    question: 是否需要消息顺序性？如何保证？
+    severity: warning
+  - id: M005
+    name: 消息过期
+    question: 消息是否有 TTL/过期策略？
+    severity: warning
+  - id: M006
+    name: 重试策略
+    question: 消费失败时的重试策略是什么？
+    severity: warning
+  - id: M007
+    name: 积压监控
+    question: 是否有消息积压监控和告警？
+    severity: info

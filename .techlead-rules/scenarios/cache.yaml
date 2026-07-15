@@ -1,0 +1,31 @@
+scenario: cache
+name: 缓存场景
+checks:
+  - id: CH001
+    name: 缓存穿透保护
+    question: 是否有缓存穿透保护（空值缓存/Bloom Filter）？
+    severity: blocker
+  - id: CH002
+    name: 缓存雪崩保护
+    question: 是否有缓存雪崩保护（随机过期时间/熔断降级）？
+    severity: blocker
+  - id: CH003
+    name: 缓存击穿保护
+    question: 热点 Key 是否有保护（互斥锁/永不过期）？
+    severity: warning
+  - id: CH004
+    name: 缓存更新策略
+    question: 缓存更新策略是什么？Write Through / Cache Aside？
+    severity: blocker
+  - id: CH005
+    name: 一致性保证
+    question: 如何保证缓存与数据库的一致性？
+    severity: blocker
+  - id: CH006
+    name: 缓存过期时间
+    question: 缓存过期时间如何设置？是否有动态调整机制？
+    severity: warning
+  - id: CH007
+    name: 缓存监控
+    question: 是否有缓存命中率、大小等监控指标？
+    severity: info

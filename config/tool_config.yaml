@@ -1,0 +1,28 @@
+# External tool connection configuration
+# This file is auto-generated or manually edited for tool-specific settings
+
+tapd:
+  enabled: false
+  api_base: "https://api.tapd.cn"
+  timeout: 30
+  retry_attempts: 3
+
+gitlab:
+  enabled: false
+  per_page: 100
+  timeout: 30
+
+notification:
+  enabled: false
+  channels:
+    - webhook
+    - email
+  templates:
+    review_request: "TechLead Agent: {title}"
+    cr_comment: "CR Review: MR !{mr_id}"
+    learning_advice: "Learning Advice: {developer}"
+
+logging:
+  format: "json"
+  rotation: "daily"
+  retention_days: 30

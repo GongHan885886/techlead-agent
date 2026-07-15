@@ -1,0 +1,31 @@
+scenario: transaction
+name: 事务处理质量门禁
+checks:
+  - id: TX001
+    name: private 方法事务
+    question: @Transactional 是否标注在 private 方法上？
+    severity: blocker
+  - id: TX002
+    name: 同类内部调用
+    question: 是否存在同类内部调用导致事务失效？
+    severity: blocker
+  - id: TX003
+    name: 异常被吞
+    question: catch 异常后是否被吞没未重新抛出？
+    severity: blocker
+  - id: TX004
+    name: 传播行为
+    question: @Transactional 的 propagation 是否合理？
+    severity: warning
+  - id: TX005
+    name: 隔离级别
+    question: 是否需要特定隔离级别？默认 READ_COMMITTED 是否满足？
+    severity: warning
+  - id: TX006
+    name: 超时设置
+    question: 是否设置了合理的超时时间？
+    severity: warning
+  - id: TX007
+    name: 只读事务
+    question: 查询方法是否使用了 @Transactional(readOnly=true)？
+    severity: info

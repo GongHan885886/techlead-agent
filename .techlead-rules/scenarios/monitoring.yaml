@@ -1,0 +1,27 @@
+scenario: monitoring
+name: 监控告警场景
+checks:
+  - id: N001
+    name: 核心指标监控
+    question: 是否监控 QPS、RT、错误率等核心指标？
+    severity: blocker
+  - id: N002
+    name: 告警阈值
+    question: 告警阈值是否合理？是否有分级告警？
+    severity: blocker
+  - id: N003
+    name: 日志规范
+    question: 日志是否包含业务标识（orderId、userId）？
+    severity: blocker
+  - id: N004
+    name: 全链路追踪
+    question: 是否有全链路追踪（Trace ID）？
+    severity: warning
+  - id: N005
+    name: 业务指标
+    question: 是否监控业务指标（成功率、转化率）？
+    severity: warning
+  - id: N006
+    name: 告警降噪
+    question: 是否有告警收敛/降噪策略？
+    severity: info

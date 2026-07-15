@@ -1,0 +1,35 @@
+scenario: file-upload
+name: 文件上传场景
+checks:
+  - id: F001
+    name: 文件大小限制
+    question: 是否明确限制单文件和总文件大小？
+    severity: blocker
+  - id: F002
+    name: 异步处理
+    question: 大文件是否需要异步处理？同步/异步边界在哪里？
+    severity: blocker
+  - id: F003
+    name: 部分失败处理
+    question: 批量上传时部分成功/部分失败如何处理？
+    severity: blocker
+  - id: F004
+    name: 存储方案
+    question: OSS/S3/本地存储？生命周期策略？
+    severity: warning
+  - id: F005
+    name: 安全校验
+    question: 是否校验文件内容（病毒扫描/格式校验）？
+    severity: warning
+  - id: F006
+    name: 重复上传处理
+    question: 是否需要去重？MD5/SHA256 校验？
+    severity: warning
+  - id: F007
+    name: 上传进度
+    question: 是否需要上传进度展示？
+    severity: info
+  - id: F008
+    name: 断点续传
+    question: 是否支持断点续传？
+    severity: info

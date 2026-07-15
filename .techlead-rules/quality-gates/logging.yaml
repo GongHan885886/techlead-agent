@@ -1,0 +1,31 @@
+scenario: logging
+name: 日志质量门禁
+checks:
+  - id: LG001
+    name: 空 catch 块
+    question: 是否存在空 catch 块？
+    severity: blocker
+  - id: LG002
+    name: printStackTrace
+    question: 是否使用了 e.printStackTrace()？
+    severity: blocker
+  - id: LG003
+    name: 业务标识
+    question: 关键日志是否缺少业务标识（orderId、userId）？
+    severity: warning
+  - id: LG004
+    name: 堆栈信息
+    question: 异常日志是否正确附加了 e 作为参数？
+    severity: warning
+  - id: LG005
+    name: 日志级别
+    question: 日志级别是否合理？ERROR/WARN/INFO/DEBUG 使用是否恰当？
+    severity: warning
+  - id: LG006
+    name: 敏感信息
+    question: 日志是否泄露敏感信息（密码、token）？
+    severity: blocker
+  - id: LG007
+    name: 日志格式
+    question: 日志格式是否统一？是否包含时间戳、Trace ID？
+    severity: suggestion

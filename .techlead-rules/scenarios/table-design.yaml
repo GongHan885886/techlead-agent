@@ -1,0 +1,31 @@
+scenario: table-design
+name: 表设计场景
+checks:
+  - id: T001
+    name: 主键设计
+    question: 主键类型是否合理？自增 ID vs UUID vs 雪花 ID？
+    severity: blocker
+  - id: T002
+    name: 索引设计
+    question: 是否设计了必要的索引？查询条件、排序字段是否有索引？
+    severity: blocker
+  - id: T003
+    name: 字段类型
+    question: 字段类型是否合理？VARCHAR 长度是否足够？
+    severity: blocker
+  - id: T004
+    name: 字符集
+    question: 字符集/排序规则是否明确（utf8mb4）？
+    severity: warning
+  - id: T005
+    name: 分库分表
+    question: 是否考虑分库分表策略？分片键如何选择？
+    severity: warning
+  - id: T006
+    name: 软删除
+    question: 是否需要软删除（deleted_at）？
+    severity: info
+  - id: T007
+    name: 数据归档
+    question: 是否有数据归档/清理策略？
+    severity: info

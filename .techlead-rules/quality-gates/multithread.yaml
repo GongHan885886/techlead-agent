@@ -1,0 +1,31 @@
+scenario: multithread
+name: 多线程安全质量门禁
+checks:
+  - id: MT001
+    name: HashMap 线程安全
+    question: 是否在并发环境使用 HashMap 而非 ConcurrentHashMap？
+    severity: blocker
+  - id: MT002
+    name: 无界队列
+    question: 线程池是否使用无界队列？是否有拒绝策略？
+    severity: warning
+  - id: MT003
+    name: 线程池配置
+    question: 线程池的核心线程数/最大线程数是否合理？
+    severity: warning
+  - id: MT004
+    name: 共享变量
+    question: 实例变量/静态变量在多线程环境下是否安全？
+    severity: blocker
+  - id: MT005
+    name: volatile 使用
+    question: 是否需要 volatile 保证可见性？
+    severity: blocker
+  - id: MT006
+    name: 锁粒度
+    question: 锁的粒度是否过大？是否可以缩小范围？
+    severity: suggestion
+  - id: MT007
+    name: 死锁风险
+    question: 是否存在死锁风险（循环等待）？
+    severity: warning

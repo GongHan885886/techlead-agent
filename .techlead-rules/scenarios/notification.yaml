@@ -1,0 +1,31 @@
+scenario: notification
+name: 通知场景
+checks:
+  - id: N001
+    name: 通知渠道
+    question: 支持哪些通知渠道？邮件/短信/站内信/推送？
+    severity: blocker
+  - id: N002
+    name: 消息可靠性
+    question: 如何保证消息不丢失？重试机制？
+    severity: blocker
+  - id: N003
+    name: 去重机制
+    question: 是否有消息去重机制？如何判断重复？
+    severity: blocker
+  - id: N004
+    name: 消息模板
+    question: 消息内容如何管理？硬编码/模板引擎？
+    severity: warning
+  - id: N005
+    name: 限流策略
+    question: 是否有发送限流策略？如何防止骚扰？
+    severity: blocker
+  - id: N006
+    name: 发送监控
+    question: 是否有发送成功率、失败原因监控？
+    severity: warning
+  - id: N007
+    name: 用户偏好
+    question: 是否支持用户通知偏好设置？
+    severity: info
