@@ -9,6 +9,7 @@ from urllib.parse import urlencode
 import httpx
 
 from config import settings
+from tools.cache_manager import get_cache_manager
 
 
 class GitClient:
@@ -61,7 +62,7 @@ class GitClient:
         project_id: Optional[int] = None,
         per_page: int = 100,
     ) -> List[Dict[str, Any]]:
-        """Fetch merge requests from GitLab.
+        """Fetch merge requests from GitLab with caching.
 
         Args:
             state: MR state filter (opened, closed, merged)
@@ -82,6 +83,18 @@ class GitClient:
             "target_branch": self.default_branch,
         }
 
+        # Try to get from cache
+        cache_manager = get_cache_manager()
+        cache_key = f"mrs:{project_id}:{state}"
+        cached = cache_manager.get_http(
+            url=f"/api/v4/projects/{project_id}/merge_requests",
+            method="GET",
+            params=params,
+            headers={"Authorization": f"Bearer {self.token}"}
+        )
+        if cached is not None:
+            return cached
+
         try:
             response = self.client.get(
                 f"/api/v4/projects/{project_id}/merge_requests?{urlencode(params)}"
@@ -93,6 +106,16 @@ class GitClient:
             for item in data:
                 mrs.append(self._parse_mr(item))
 
+            # Cache the result (30 minutes TTL)
+            cache_manager.set_http(
+                url=f"/api/v4/projects/{project_id}/merge_requests",
+                method="GET",
+                params=params,
+                headers={"Authorization": f"Bearer {self.token}"},
+                data=mrs,
+                ttl_minutes=30
+            )
+
             return mrs
 
         except Exception as e:
@@ -102,7 +125,7 @@ class GitClient:
     async def fetch_mr_diff(
         self, mr_id: int, project_id: Optional[int] = None
     ) -> str:
-        """Fetch diff for a specific merge request.
+        """Fetch diff for a specific merge request with caching.
 
         Args:
             mr_id: MR ID (internal GitLab ID, not IID)
@@ -115,6 +138,17 @@ class GitClient:
             return self._mock_diff()
 
         project_id = project_id or self.project_id
+
+        # Try to get from cache
+        cache_manager = get_cache_manager()
+        cache_key = f"mr_diff:{project_id}:{mr_id}"
+        cached = cache_manager.get_http(
+            url=f"/api/v4/projects/{project_id}/merge_requests/{mr_id}/diff",
+            method="GET",
+            headers={"Authorization": f"Bearer {self.token}"}
+        )
+        if cached is not None:
+            return cached
 
         try:
             response = self.client.get(
@@ -135,7 +169,18 @@ class GitClient:
                     f"{diff_content}\n"
                 )
 
-            return "\n".join(diff_parts)
+            result = "\n".join(diff_parts)
+
+            # Cache the result (15 minutes TTL)
+            cache_manager.set_http(
+                url=f"/api/v4/projects/{project_id}/merge_requests/{mr_id}/diff",
+                method="GET",
+                headers={"Authorization": f"Bearer {self.token}"},
+                data=result,
+                ttl_minutes=15
+            )
+
+            return result
 
         except Exception as e:
             print(f"⚠️  Failed to fetch MR diff: {e}")

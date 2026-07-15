@@ -11,6 +11,7 @@ from urllib.parse import urlencode
 import httpx
 
 from config import settings
+from tools.cache_manager import get_cache_manager
 
 
 class TAPDClient:
@@ -68,7 +69,7 @@ class TAPDClient:
         workspace_id: Optional[str] = None,
         limit: int = 100,
     ) -> List[Dict[str, Any]]:
-        """Fetch stories from TAPD.
+        """Fetch stories from TAPD with caching.
 
         Args:
             status: Story status filter
@@ -90,6 +91,18 @@ class TAPDClient:
             "fields": "id,name,owner,status,progress,begin_date,due_date,modified,priority",
         }
 
+        # Try to get from cache
+        cache_manager = get_cache_manager()
+        cache_key = f"tapd_stories:{workspace_id}:{status}"
+        cached = cache_manager.get_http(
+            url=f"/stories",
+            method="GET",
+            params=params,
+            headers=self.auth_header
+        )
+        if cached is not None:
+            return cached
+
         try:
             response = self.client.get(f"/stories?{urlencode(params)}")
             response.raise_for_status()
@@ -98,6 +111,16 @@ class TAPDClient:
             stories = []
             for item in data.get("data", {}).get("Story", []):
                 stories.append(self._parse_story(item))
+
+            # Cache the result (10 minutes TTL for TAPD data)
+            cache_manager.set_http(
+                url=f"/stories",
+                method="GET",
+                params=params,
+                headers=self.auth_header,
+                data=stories,
+                ttl_minutes=10
+            )
 
             return stories
 

@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     trace_enabled: bool = True
     session_timeout_minutes: int = 30
 
+    # Cache Configuration
+    cache_enabled: bool = True
+    cache_dir: str = "./storage/cache"
+
     # Paths
     root_dir: Path = Path(__file__).parent.parent
     rules_dir: Path = root_dir / ".techlead-rules"

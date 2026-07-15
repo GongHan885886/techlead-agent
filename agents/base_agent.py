@@ -85,7 +85,11 @@ class BaseAgent(ABC):
         messages: List[Dict[str, str]],
         tools: Optional[List[Dict]] = None,
     ) -> str:
-        """Make an LLM API call.
+        """Make an LLM API call with exact-match caching.
+
+        Caches responses based on the full message content + model name.
+        An identical messages array in a subsequent call returns the cached
+        result without consuming tokens.
 
         Args:
             messages: List of message dicts (role, content)
@@ -94,6 +98,18 @@ class BaseAgent(ABC):
         Returns:
             str: LLM response text
         """
+        from tools.cache_manager import get_cache_manager
+        cache_manager = get_cache_manager()
+
+        # Generate cache key from exact message content + model
+        prompt = json.dumps(messages, sort_keys=True)
+
+        # Try to get from cache first
+        cached = cache_manager.get_llm(prompt, self.model)
+        if cached is not None:
+            self.logger.debug("LLM cache hit (exact match)")
+            return cached
+
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -103,7 +119,12 @@ class BaseAgent(ABC):
                 tools=tools,
             )
 
-            return response.choices[0].message.content or ""
+            result = response.choices[0].message.content or ""
+
+            # Cache the result for future exact-match calls
+            cache_manager.set_llm(prompt, result, self.model, ttl_hours=2)
+
+            return result
 
         except Exception as e:
             self.logger.error(f"LLM call failed: {e}")

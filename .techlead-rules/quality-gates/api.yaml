@@ -1,0 +1,27 @@
+scenario: api
+name: API 设计质量门禁
+checks:
+  - id: API001
+    name: 接口幂等性
+    question: "写接口是否考虑了幂等性？"
+    severity: blocker
+  - id: API002
+    name: 参数校验
+    question: 是否校验了所有外部入参？
+    severity: blocker
+  - id: API003
+    name: 错误返回
+    question: "是否定义了统一的错误返回格式？"
+    severity: warning
+  - id: API004
+    name: 鉴权
+    question: 接口是否需要鉴权？
+    severity: blocker
+  - id: API005
+    name: 版本管理
+    question: 是否有 API 版本管理策略？
+    severity: warning
+  - id: API006
+    name: 限流
+    question: 是否需要限流保护？
+    severity: info

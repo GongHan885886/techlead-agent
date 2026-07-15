@@ -28,6 +28,7 @@ from utils.logger import setup_logging, get_logger
 from agents.orchestrator import OrchestratorAgent
 from tools.memory_store import init_db
 from tools.rule_loader import validate_rules_dir
+from tools.cache_manager import get_cache_manager
 
 
 # Initialize
@@ -213,6 +214,13 @@ def help_command():
   main.py weekly-report
   生成本周工作汇报
 
+[yellow]【缓存管理】[/yellow]
+  main.py status
+  查看缓存统计和命中率
+
+  main.py clear-cache [type]
+  清除缓存（默认全部，可指定: file, http, llm, result）
+
 [yellow]【配置】[/yellow]
   复制 .env.example 为 .env 并配置：
   - OPENAI_API_KEY: OpenAI API 密钥
@@ -344,6 +352,30 @@ def confirm():
 
 
 @app.command()
+def clear_cache(cache_type: str = "all"):
+    """Clear cached data.
+
+    Args:
+        cache_type: Type of cache to clear (all, file, http, llm, result)
+    """
+    from tools.cache_manager import get_cache_manager
+
+    console.print(f"\n[bold blue]🗑️  清除缓存...[/bold blue]\n")
+
+    cache_manager = get_cache_manager()
+
+    if cache_type == "all":
+        cache_manager.clear_all()
+        console.print("[green]✅ 已清除所有缓存[/green]")
+    elif cache_type in ["file", "http", "llm", "result"]:
+        cache_manager.clear_type(cache_type)
+        console.print(f"[green]✅ 已清除 {cache_type} 缓存[/green]")
+    else:
+        console.print(f"[red]❌ 未知缓存类型: {cache_type}[/red]")
+        console.print("可用类型: all, file, http, llm, result")
+
+
+@app.command()
 def status():
     """Show system status."""
     console.print("\n[bold blue]🔍 系统状态[/bold blue]\n")
@@ -359,8 +391,28 @@ def status():
     console.print(f"[bold]规则文件[/bold]: {settings.rules_dir}")
     console.print(f"  状态: {'✅ 完整' if rules_valid else '⚠️  部分缺失'}\n")
 
+    # Cache status
+    console.print(f"[bold]缓存系统[/bold]:")
+    cache_enabled = getattr(settings, 'cache_enabled', True)
+    console.print(f"  启用: {'✅' if cache_enabled else '❌'}")
+    if cache_enabled:
+        cache_manager = get_cache_manager()
+        stats = cache_manager.get_stats()
+        console.print(f"  文件缓存命中: {stats['file_hits']} 次")
+        console.print(f"  文件缓存未命中: {stats['file_misses']} 次")
+        console.print(f"  HTTP 缓存命中: {stats['http_hits']} 次")
+        console.print(f"  HTTP 缓存未命中: {stats['http_misses']} 次")
+
+        # Show hit rates
+        hit_rates = cache_manager.get_hit_rate()
+        console.print(f"\n[bold]缓存命中率[/bold]:")
+        for cache_type, rate in hit_rates.items():
+            hit_rate_pct = rate['hit_rate'] * 100
+            color = "green" if hit_rate_pct >= 80 else "yellow" if hit_rate_pct >= 50 else "red"
+            console.print(f"  {cache_type.upper()}: {hit_rate_pct:.1f}% ({rate['hits']}/{rate['hits']+rate['misses']})")
+
     # Configuration status
-    console.print(f"[bold]配置[/bold]:")
+    console.print(f"\n[bold]配置[/bold]:")
     console.print(f"  LLM 模型: {settings.llm_model}")
     console.print(f"  日志级别: {settings.log_level}")
     console.print(f"  追踪启用: {'✅' if settings.trace_enabled else '❌'}")

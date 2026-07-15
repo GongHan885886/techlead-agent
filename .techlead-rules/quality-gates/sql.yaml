@@ -1,0 +1,27 @@
+scenario: sql
+name: SQL 质量门禁
+checks:
+  - id: SQL001
+    name: N+1 查询
+    question: 是否存在 N+1 查询问题？
+    severity: blocker
+  - id: SQL002
+    name: 索引使用
+    question: 查询条件是否使用了合适的索引？
+    severity: blocker
+  - id: SQL003
+    name: 批量操作
+    question: 循环内是否有 SQL 调用？
+    severity: blocker
+  - id: SQL004
+    name: 大表扫描
+    question: "是否存在全表扫描风险？"
+    severity: warning
+  - id: SQL005
+    name: 连接池
+    question: 连接池配置是否合理？
+    severity: warning
+  - id: SQL006
+    name: 慢查询
+    question: 是否有慢查询监控？
+    severity: info

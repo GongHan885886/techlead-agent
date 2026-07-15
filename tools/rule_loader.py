@@ -11,6 +11,7 @@ from typing import Optional
 import yaml
 
 from config import settings
+from tools.cache_manager import get_cache_manager
 
 # Scenario to file path mapping
 RULE_MAP = {
@@ -34,7 +35,7 @@ RULE_MAP = {
 
 
 def load_rules(scenario: str) -> dict:
-    """Load rules for a given scenario from YAML file.
+    """Load rules for a given scenario from YAML file with caching.
 
     Args:
         scenario: The scenario identifier (e.g., "file-upload", "transaction")
@@ -51,11 +52,21 @@ def load_rules(scenario: str) -> dict:
         raise ValueError(f"Unknown scenario: {scenario}. Available: {list(RULE_MAP.keys())}")
 
     file_path = settings.rules_dir / RULE_MAP[scenario]
+
+    # Check cache first
+    cache_manager = get_cache_manager()
+    cached = cache_manager.get_file(str(file_path))
+    if cached is not None:
+        return cached
+
     if not file_path.exists():
         raise FileNotFoundError(f"Rule file not found: {file_path}")
 
     with open(file_path, "r", encoding="utf-8") as f:
         content = yaml.safe_load(f)
+
+    # Cache the result (24 hours TTL)
+    cache_manager.set_file(str(file_path), content, ttl_hours=24)
 
     return content
 

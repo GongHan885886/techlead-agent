@@ -3,7 +3,7 @@ name: 事务处理质量门禁
 checks:
   - id: TX001
     name: private 方法事务
-    question: @Transactional 是否标注在 private 方法上？
+    question: "@Transactional 是否标注在 private 方法上？"
     severity: blocker
   - id: TX002
     name: 同类内部调用
@@ -15,7 +15,7 @@ checks:
     severity: blocker
   - id: TX004
     name: 传播行为
-    question: @Transactional 的 propagation 是否合理？
+    question: "@Transactional 的 propagation 是否合理？"
     severity: warning
   - id: TX005
     name: 隔离级别
@@ -27,5 +27,5 @@ checks:
     severity: warning
   - id: TX007
     name: 只读事务
-    question: 查询方法是否使用了 @Transactional(readOnly=true)？
+    question: "查询方法是否使用了 @Transactional(readOnly=true)？"
     severity: info
