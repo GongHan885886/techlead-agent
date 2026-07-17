@@ -53,6 +53,22 @@ def setup(verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable ve
 
 
 @app.command()
+def chat(
+    message: str = typer.Argument(..., help="自然语言指令，例如：'扫描今天的工作'、'评审张三的方案'"),
+):
+    """通过自然语言与 TechLead Agent 交互。"""
+    console.print(f"\n[bold blue]💬 正在处理: {message}[/bold blue]\n")
+
+    async def run_chat():
+        orchestrator = OrchestratorAgent()
+        result = await orchestrator.process({"message": message})
+        return result
+
+    result = asyncio.run(run_chat())
+    _display_result(result)
+
+
+@app.command()
 def scan():
     """Scan daily tasks: pending designs, MRs, and TAPD risks."""
     console.print("\n[bold blue]📋 开始每日扫描...[/bold blue]\n")
@@ -60,15 +76,12 @@ def scan():
     async def run_scan():
         orchestrator = OrchestratorAgent()
         result = await orchestrator.process({"message": "scan"})
-
-        # Display results
-        _display_scan_results(result)
-
         return result
 
     result = asyncio.run(run_scan())
+    _display_result(result)
 
-    console.print(f"\n[green]✅ 扫描完成！[/green]")
+    console.print("\n[green]✅ 扫描完成！[/green]")
 
 
 @app.command()
@@ -86,15 +99,10 @@ def review_design(
             "author": author,
             "scenario": scenario,
         })
-
         return result
 
     result = asyncio.run(run_review())
-
-    if result.get("intent") == "deep_review":
-        console.print(f"[yellow]🔧 Design reviewer agent - Full implementation pending[/yellow]")
-    else:
-        console.print(result.get("message", "No message"))
+    _display_result(result)
 
 
 @app.command()
@@ -114,15 +122,10 @@ def review_mr(
             "mr_id": int(mr_id),
             "focus_areas": focus_areas,
         })
-
         return result
 
     result = asyncio.run(run_review())
-
-    if result.get("intent") == "code_review":
-        _display_mr_results(result)
-    else:
-        console.print(result.get("message", "No message"))
+    _display_result(result)
 
 
 @app.command()
@@ -134,24 +137,16 @@ def profile(
     console.print(f"\n[bold blue]📚 查询 {developer} 的错题情况...[/bold blue]\n")
 
     async def run_profile():
-        from agents.learning_advisor import LearningAdvisorAgent
-
-        learning_agent = LearningAdvisorAgent()
-        result = await learning_agent.process({"developer": developer, "days": days})
-
+        orchestrator = OrchestratorAgent()
+        result = await orchestrator.process({
+            "message": f"learning advice for {developer}",
+            "developer": developer,
+            "days": days,
+        })
         return result
 
     result = asyncio.run(run_profile())
-
-    if result.get("intent") == "learning_advice" and "error" not in result:
-        # Display formatted report
-        from agents.learning_advisor import LearningAdvisorAgent
-
-        learning_agent = LearningAdvisorAgent()
-        formatted_report = learning_agent.format_report(result)
-        console.print(formatted_report)
-    else:
-        console.print(result.get("message", "No message"))
+    _display_result(result)
 
 
 @app.command()
@@ -162,37 +157,34 @@ def weekly_report():
     async def run_report():
         orchestrator = OrchestratorAgent()
         result = await orchestrator.process({"message": "weekly report"})
-
         return result
 
     result = asyncio.run(run_report())
+    _display_result(result)
 
-    if result.get("intent") == "weekly_report":
-        delivery = result.get("delivery", {})
-        team = result.get("team", {})
 
-        # Display delivery tracking
-        if delivery:
-            from agents.delivery_tracker import DeliveryTrackerAgent
+@app.command()
+def dashboard(
+    port: int = typer.Option(7820, "--port", "-p", help="Dashboard server port"),
+    host: str = typer.Option("127.0.0.1", "--host", help="Dashboard server host"),
+):
+    """启动人效看板（Web 仪表盘）。"""
+    console.print(f"\n[bold blue]📊 启动人效看板...[/bold blue]\n")
+    console.print(f"   地址: [link=http://{host}:{port}]http://{host}:{port}[/link]")
+    console.print(f"   按 Ctrl+C 停止服务\n")
 
-            delivery_agent = DeliveryTrackerAgent()
-            formatted_report = delivery_agent.format_report(delivery)
-            console.print(formatted_report)
-
-        # Display team overview
-        if team and team.get("common_issues"):
-            console.print("\n[bold blue]👥 团队共性问题[/bold blue]\n")
-            for issue in team["common_issues"][:5]:
-                emoji = {"blocker": "🔴", "warning": "🟡", "info": "🟢"}.get(issue["severity"], "⚪")
-                console.print(f"{emoji} {issue['type']}: {issue['count']} 次")
-    else:
-        console.print(result.get("message", "No message"))
+    import uvicorn
+    uvicorn.run("dashboard.app:app", host=host, port=port, log_level="info")
 
 
 @app.command()
 def help_command():
     """Show available commands and usage."""
     help_text = """[bold blue]🤖 TechLead Agent 可用命令：[/bold blue]
+
+[yellow]【自然语言交互】[/yellow]
+  main.py chat "你的指令"
+  直接说你想做什么，不记命令名
 
 [yellow]【每日扫描】[/yellow]
   main.py scan
@@ -221,6 +213,9 @@ def help_command():
   main.py clear-cache [type]
   清除缓存（默认全部，可指定: file, http, llm, result）
 
+[yellow]【人效看板】[/yellow]
+  main.py dashboard
+  启动 Web 看板，浏览器打开 http://127.0.0.1:7820
 [yellow]【配置】[/yellow]
   复制 .env.example 为 .env 并配置：
   - OPENAI_API_KEY: OpenAI API 密钥
@@ -321,6 +316,57 @@ def _display_mr_results(result: dict):
         console.print("使用 'main.py confirm' 确认发送评论")
 
 
+def _display_weekly_report(result: dict):
+    """Display weekly report results."""
+    delivery = result.get("delivery", {})
+    team = result.get("team", {})
+
+    if delivery:
+        from agents.delivery_tracker import DeliveryTrackerAgent
+
+        delivery_agent = DeliveryTrackerAgent()
+        formatted_report = delivery_agent.format_report(delivery)
+        console.print(formatted_report)
+
+    if team and team.get("common_issues"):
+        console.print("\n[bold blue]👥 团队共性问题[/bold blue]\n")
+        for issue in team["common_issues"][:5]:
+            emoji = {"blocker": "🔴", "warning": "🟡", "info": "🟢"}.get(issue["severity"], "⚪")
+            console.print(f"{emoji} {issue['type']}: {issue['count']} 次")
+
+
+def _display_result(result: dict):
+    """Unified result display based on intent."""
+    intent = result.get("intent")
+
+    if intent == "scan":
+        _display_scan_results(result)
+    elif intent == "deep_review":
+        from agents.design_reviewer import DesignReviewerAgent
+
+        reviewer = DesignReviewerAgent()
+        formatted_report = reviewer.format_report(result)
+        console.print(formatted_report)
+    elif intent == "code_review":
+        _display_mr_results(result)
+    elif intent == "learning_advice":
+        formatted_report = result.get("formatted_report", "")
+        if formatted_report:
+            console.print(formatted_report)
+        else:
+            console.print(result.get("message", "No message"))
+    elif intent == "weekly_report":
+        _display_weekly_report(result)
+    elif intent == "help":
+        console.print(result.get("message", ""))
+    elif intent == "confirm":
+        console.print(f"[green]✅ {result.get('message', '操作已执行')}[/green]")
+    elif intent == "cancel":
+        console.print(f"[red]❌ {result.get('message', '操作已取消')}[/red]")
+    else:
+        console.print(result.get("response", result.get("message", "No message")))
+
+
 def _display_profile(developer: str, profile: dict, context: str, days: int):
     """Display developer profile and learning advice."""
     console.print(f"[bold blue]📚 【{developer}】的错题情况[/bold blue]\n")
@@ -348,7 +394,14 @@ def _display_profile(developer: str, profile: dict, context: str, days: int):
 def confirm():
     """Confirm and execute pending tasks."""
     console.print("\n[bold blue]✓ 确认执行待处理任务...[/bold blue]\n")
-    console.print("[yellow]⚠️  此功能需要先有挂起的任务（如 CR 评论待确认）[/yellow]")
+
+    async def run_confirm():
+        orchestrator = OrchestratorAgent()
+        result = await orchestrator.process({"message": "confirm"})
+        return result
+
+    result = asyncio.run(run_confirm())
+    _display_result(result)
 
 
 @app.command()
