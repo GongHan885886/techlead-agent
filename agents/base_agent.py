@@ -3,8 +3,10 @@
 All specialist agents inherit from this base class.
 """
 
-from abc import ABC, abstractmethod
 import json
+import time
+import uuid
+from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 from datetime import datetime
@@ -16,7 +18,11 @@ from utils.logger import get_logger
 
 
 class BaseAgent(ABC):
-    """Base agent with common functionality."""
+    """Base agent with common functionality.
+
+    Provides LLM calls with span-based tracing: every llm_call writes a
+    structured trace entry containing token consumption and latency.
+    """
 
     def __init__(
         self,
@@ -54,6 +60,12 @@ class BaseAgent(ABC):
         self.session_id: Optional[str] = None
         self.context: Dict[str, Any] = {}
 
+        # ── Tracing fields ──
+        self._trace_id: Optional[str] = None        # one per user interaction
+        self._current_span_id: Optional[str] = None  # current span in the tree
+        self._parent_span_id: Optional[str] = None   # parent span in the tree
+        self._span_stack: List[str] = []             # for nested spans (agent→llm→tool)
+
     def _load_system_prompt(self) -> str:
         """Load system prompt from prompts directory.
 
@@ -81,36 +93,110 @@ class BaseAgent(ABC):
         """
         pass
 
+    # ── Span lifecycle ──────────────────────────────────────────
+
+    def _start_span(self, action: str, span_type: str = "agent_process") -> str:
+        """Begin a new span and return its span_id.
+
+        Pushes the current span onto a stack so nested calls
+        (agent → llm_call → …) produce a proper parent-child tree.
+
+        Args:
+            action: Human-readable action name
+            span_type: One of 'agent_process', 'llm_call', 'tool_call'
+
+        Returns:
+            str: The new span_id
+        """
+        span_id = str(uuid.uuid4())
+        if self._current_span_id:
+            self._span_stack.append(self._current_span_id)
+        self._parent_span_id = self._current_span_id
+        self._current_span_id = span_id
+
+        self._write_trace({
+            "type": span_type,
+            "span_id": span_id,
+            "parent_span_id": self._parent_span_id,
+            "trace_id": self._trace_id,
+            "session_id": self.session_id,
+            "agent": self.name,
+            "action": action,
+            "status": "started",
+            "timestamp": datetime.now().isoformat(),
+        })
+        return span_id
+
+    def _end_span(self, **kwargs):
+        """End the current span, writing remaining fields.
+
+        Keyword args are merged into the trace entry (duration_ms,
+        total_tokens, model, status, error, etc.).
+        """
+        if not self._current_span_id:
+            return
+
+        self._write_trace({
+            "type": "agent_process",
+            "span_id": self._current_span_id,
+            "trace_id": self._trace_id,
+            "agent": self.name,
+            "status": "ok",
+            "timestamp": datetime.now().isoformat(),
+            **kwargs,
+        })
+
+        # Restore parent span
+        self._current_span_id = (
+            self._span_stack.pop() if self._span_stack else self._parent_span_id
+        )
+
+    # ── LLM call with tracing ───────────────────────────────────
+
     async def llm_call(
         self,
         messages: List[Dict[str, str]],
         tools: Optional[List[Dict]] = None,
     ) -> str:
-        """Make an LLM API call with exact-match caching.
+        """Make an LLM API call with exact-match caching and full tracing.
 
-        Caches responses based on the full message content + model name.
-        An identical messages array in a subsequent call returns the cached
-        result without consuming tokens.
-
-        Args:
-            messages: List of message dicts (role, content)
-            tools: Optional list of tools for function calling
-
-        Returns:
-            str: LLM response text
+        Every call — cache hit or API request — writes a structured
+        span entry that includes token consumption, latency, model,
+        and status.
         """
         from tools.cache_manager import get_cache_manager
         cache_manager = get_cache_manager()
 
-        # Generate cache key from exact message content + model
         prompt = json.dumps(messages, sort_keys=True)
+        span_id = self._start_span("llm_call", "llm_call")
 
-        # Try to get from cache first
+        # ── Cache check ──
         cached = cache_manager.get_llm(prompt, self.model)
         if cached is not None:
+            self._write_trace({
+                "type": "llm_call",
+                "span_id": span_id,
+                "parent_span_id": self._parent_span_id,
+                "trace_id": self._trace_id,
+                "session_id": self.session_id,
+                "agent": self.name,
+                "model": self.model,
+                "cache_hit": True,
+                "duration_ms": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0,
+                "status": "ok",
+                "timestamp": datetime.now().isoformat(),
+            })
+            # Restore parent span (don't use _end_span — already wrote)
+            self._current_span_id = (
+                self._span_stack.pop() if self._span_stack else self._parent_span_id
+            )
             self.logger.debug("LLM cache hit (exact match)")
             return cached
 
+        t0 = time.monotonic()
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -120,55 +206,80 @@ class BaseAgent(ABC):
                 tools=tools,
             )
 
+            duration_ms = round((time.monotonic() - t0) * 1000, 1)
+            usage = response.usage
+            model_used = getattr(response, "model", None) or self.model
+
             result = response.choices[0].message.content or ""
 
-            # Cache the result for future exact-match calls
+            self._write_trace({
+                "type": "llm_call",
+                "span_id": span_id,
+                "parent_span_id": self._parent_span_id,
+                "trace_id": self._trace_id,
+                "session_id": self.session_id,
+                "agent": self.name,
+                "model": model_used,
+                "cache_hit": False,
+                "duration_ms": duration_ms,
+                "prompt_tokens": usage.prompt_tokens if usage else 0,
+                "completion_tokens": usage.completion_tokens if usage else 0,
+                "total_tokens": usage.total_tokens if usage else 0,
+                "status": "ok",
+                "timestamp": datetime.now().isoformat(),
+            })
+
             cache_manager.set_llm(prompt, result, self.model, ttl_hours=2)
 
+            # Restore parent span
+            self._current_span_id = (
+                self._span_stack.pop() if self._span_stack else self._parent_span_id
+            )
             return result
 
         except Exception as e:
+            self._write_trace({
+                "type": "llm_call",
+                "span_id": span_id,
+                "parent_span_id": self._parent_span_id,
+                "trace_id": self._trace_id,
+                "session_id": self.session_id,
+                "agent": self.name,
+                "model": self.model,
+                "cache_hit": False,
+                "duration_ms": round((time.monotonic() - t0) * 1000, 1),
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0,
+                "status": "error",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat(),
+            })
+            self._current_span_id = (
+                self._span_stack.pop() if self._span_stack else self._parent_span_id
+            )
             self.logger.error(f"LLM call failed: {e}")
             raise
 
-    def set_session(self, session_id: str):
-        """Set session ID for context tracking.
+    # ── Session / context ────────────────────────────────────────
 
-        Args:
-            session_id: Unique session identifier
-        """
+    def set_session(self, session_id: str):
         self.session_id = session_id
         self.context["session_id"] = session_id
         self.context["timestamp"] = datetime.now().isoformat()
 
     def update_context(self, key: str, value: Any):
-        """Update execution context.
-
-        Args:
-            key: Context key
-            value: Context value
-        """
         self.context[key] = value
 
     def get_context(self, key: str, default: Any = None) -> Any:
-        """Get value from context.
-
-        Args:
-            key: Context key
-            default: Default value if key not found
-
-        Returns:
-            Context value or default
-        """
         return self.context.get(key, default)
 
-    def _log_execution(self, action: str, input_data: Dict, output_data: Dict):
-        """Log execution for observability.
+    # ── Trace logging ────────────────────────────────────────────
 
-        Args:
-            action: Action name
-            input_data: Input data
-            output_data: Output data
+    def _log_execution(self, action: str, input_data: Dict, output_data: Dict):
+        """Log execution for observability — legacy format.
+
+        Kept for backward compatibility; new spans use _start_span/_end_span.
         """
         log_entry = {
             "timestamp": datetime.now().isoformat(),
@@ -179,23 +290,32 @@ class BaseAgent(ABC):
             "output": output_data,
         }
 
-        # Write to trace log if enabled
         if settings.trace_enabled:
             self._write_trace(log_entry)
 
     def _write_trace(self, log_entry: Dict):
-        """Write log entry to trace file.
+        """Write a trace entry to JSONL file + SQLite spans table.
+
+        JSONL = cold backup (grep/jq friendly).
+        SQLite = hot query path (dashboard/analytics).
 
         Args:
-            log_entry: Log entry dictionary
+            log_entry: Flat dictionary — all keys are written as-is.
         """
-        import json
-
         settings.logs_dir.mkdir(parents=True, exist_ok=True)
         trace_file = settings.logs_dir / f"traces_{datetime.now().strftime('%Y-%m-%d')}.jsonl"
 
         with open(trace_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
+        # Dual-write to SQLite for dashboard queries (best-effort)
+        try:
+            from tools.memory_store import write_span
+            write_span(log_entry)
+        except Exception:
+            pass
+
+    # ── Output formatting ────────────────────────────────────────
 
     def format_output(self, output: Dict, template: Optional[str] = None) -> str:
         """Format output for presentation.
@@ -210,7 +330,6 @@ class BaseAgent(ABC):
         if template:
             return template.format(**output)
 
-        # Default formatting
         lines = [f"【{self.name}】"]
         for key, value in output.items():
             lines.append(f"{key}: {value}")

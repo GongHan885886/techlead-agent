@@ -12,6 +12,9 @@ import httpx
 
 from config import settings
 from tools.cache_manager import get_cache_manager
+from utils.logger import get_logger
+
+_logger = get_logger("tapd_client")
 
 
 class TAPDClient:
@@ -80,7 +83,7 @@ class TAPDClient:
             List of story dictionaries
         """
         if not self.is_configured():
-            print("⚠️  TAPD not configured, returning mock data")
+            _logger.warning("TAPD not configured, returning mock data")
             return self._mock_stories()
 
         workspace_id = workspace_id or self.company_id
@@ -125,7 +128,7 @@ class TAPDClient:
             return stories
 
         except Exception as e:
-            print(f"⚠️  Failed to fetch TAPD stories: {e}")
+            _logger.warning(f"Failed to fetch TAPD stories: {e}")
             return self._mock_stories()
 
     async def fetch_bugs(

@@ -233,6 +233,12 @@ function render(dateStr) {
     '  <div class="panel"><h2>CR 周转时间</h2><div id="trend-turnaround" class="chart-container chart-container-sm"></div></div>',
     '  <div class="panel"><h2>评审通过率</h2><div id="review-stats" class="chart-container chart-container-sm"></div></div>',
     '</div>',
+    // ── LLM efficiency panel ──
+    '<div class="grid-2">',
+    '  <div class="panel"><h2>LLM Token 消耗</h2><div id="llm-token-trend" class="chart-container chart-container-sm"></div></div>',
+    '  <div class="panel"><h2>Agent 延迟 P50/P95</h2><div id="llm-latency" class="chart-container chart-container-sm"></div></div>',
+    '</div>',
+    '<div class="cards" id="llm-cost-cards" style="margin-bottom:24px"></div>',
     '<div class="panel" style="margin-bottom:24px">',
     '  <h2>开发者详情</h2>',
     '  <div class="dev-selector" id="dev-selector"></div>',
@@ -243,11 +249,13 @@ function render(dateStr) {
 
 async function load() {
   try {
-    const [overview, developers, trendsData, reviewStats, teamComp, problemsData, radarData, requirements, todoData, issueBreakdown] = await Promise.all([
+    const [overview, developers, trendsData, reviewStats, teamComp, problemsData, radarData, requirements, todoData, issueBreakdown, costData, latencyData, llmTrends, cacheData] = await Promise.all([
       get(api('/api/overview')), get(api('/api/developers')), get(api('/api/trends')),
       get(api('/api/review-stats')), get(api('/api/team-composition')),
       get(api('/api/problems')), get(api('/api/developer-radar')),
       get(api('/api/requirements')), get(api('/api/todo')), get(api('/api/issue-breakdown')),
+      get(api('/api/cost?days=7')), get(api('/api/latency?days=7')),
+      get(api('/api/llm-trends?days=30')), get(api('/api/cache-efficiency?days=7')),
     ]);
 
     const tierCounts = {};
@@ -267,6 +275,9 @@ async function load() {
     renderIssueStacked(issueBreakdown);
     renderTrends(trendsData);
     renderReviewStats(reviewStats);
+    renderLLMCostCards(costData);
+    renderLLMTokenTrend(llmTrends);
+    renderLLMLatency(latencyData);
     renderDevSelector(developers, teamComp);
   } catch (e) {
     document.getElementById('app').innerHTML = '<div class="error-state">❌ 加载失败: ' + e.message + '</div>';
@@ -969,6 +980,98 @@ function renderRequirements(data) {
 
   html += '</tbody></table></div>';
   el.innerHTML = html;
+}
+
+/* ── LLM Efficiency card row ── */
+function renderLLMCostCards(data) {
+  var el = document.getElementById('llm-cost-cards');
+  if (!el) return;
+  var tc = data.total_tokens || 0;
+  var cost = data.total_cost || 0;
+  var calls = data.total_calls || 0;
+  var agents = (data.breakdown || []).length;
+  el.innerHTML = [
+    '<div class="card"><div class="label">近7天 Token</div><div class="value accent">' + (tc >= 1000 ? (tc/1000).toFixed(1) + 'k' : tc) + '</div><div class="sub">' + calls + ' 次调用</div></div>',
+    '<div class="card"><div class="label">预估成本</div><div class="value ' + (cost > 1 ? 'red' : cost > 0.1 ? 'yellow' : 'green') + '">$' + cost.toFixed(cost < 1 ? 4 : 2) + '</div><div class="sub">' + agents + ' 个 Agent</div></div>',
+    '<div class="card"><div class="label">周调用量</div><div class="value blue">' + calls + '</div><div class="sub">LLM 请求</div></div>',
+  ].join('');
+}
+
+/* ── LLM Token trend chart ── */
+var _llmTokenChart = null;
+function renderLLMTokenTrend(data) {
+  var el = document.getElementById('llm-token-trend');
+  if (!el) return;
+  var ctx = document.createElement('canvas');
+  el.innerHTML = '';
+  el.appendChild(ctx);
+  if (_llmTokenChart) _llmTokenChart.destroy();
+
+  var days = (data.daily || []);
+  var labels = days.map(function(d) { return d.day ? d.day.slice(5) : ''; });
+  var tokenVals = days.map(function(d) { return (d.total_tok || 0); });
+  var callVals = days.map(function(d) { return d.calls || 0; });
+
+  _llmTokenChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Token', data: tokenVals, backgroundColor: COLORS.accent + '80', borderRadius: 2, yAxisID: 'y' },
+        { label: '调用次数', data: callVals, borderColor: COLORS.green, backgroundColor: 'transparent', borderWidth: 2, type: 'line', tension: 0.3, pointRadius: 2, yAxisID: 'y1' },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { color: '#8b8fa8', boxWidth: 12, padding: 8, font: { size: 11 } } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#8b8fa8', maxTicksLimit: 8, font: { size: 10 } } },
+        y: { type: 'linear', position: 'left', title: { display: true, text: 'tokens', color: '#8b8fa8' }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b8fa8' } },
+        y1: { type: 'linear', position: 'right', title: { display: true, text: 'calls', color: '#8b8fa8' }, grid: { drawOnChartArea: false }, ticks: { color: '#60a5fa' } },
+      },
+      interaction: { mode: 'index', intersect: false },
+    }
+  });
+}
+
+/* ── LLM Latency bar chart ── */
+var _llmLatencyChart = null;
+function renderLLMLatency(data) {
+  var el = document.getElementById('llm-latency');
+  if (!el) return;
+  var ctx = document.createElement('canvas');
+  el.innerHTML = '';
+  el.appendChild(ctx);
+  if (_llmLatencyChart) _llmLatencyChart.destroy();
+
+  var agents = data.agents || [];
+  if (agents.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px">暂无 LLM 调用数据</div>';
+    return;
+  }
+  var labels = agents.map(function(a) { return a.agent; });
+  var p50 = agents.map(function(a) { return a.p50_ms; });
+  var p95 = agents.map(function(a) { return a.p95_ms; });
+
+  _llmLatencyChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'P50 (ms)', data: p50, backgroundColor: COLORS.accent, borderRadius: 2 },
+        { label: 'P95 (ms)', data: p95, backgroundColor: COLORS.yellow, borderRadius: 2 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { color: '#8b8fa8', boxWidth: 12, padding: 8, font: { size: 11 } } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#e2e4f0', font: { size: 10 } } },
+        y: { title: { display: true, text: 'ms', color: '#8b8fa8' }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b8fa8' } },
+      },
+      interaction: { mode: 'index' },
+    }
+  });
 }
 
 load();

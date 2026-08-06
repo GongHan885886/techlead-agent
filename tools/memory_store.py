@@ -81,6 +81,34 @@ def init_db():
         )
     """)
 
+    # ── Spans table (observability tracing) ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS spans (
+            span_id TEXT PRIMARY KEY,
+            parent_span_id TEXT,
+            trace_id TEXT NOT NULL,
+            session_id TEXT,
+            agent TEXT NOT NULL,
+            type TEXT NOT NULL DEFAULT 'agent_process',
+            action TEXT,
+            status TEXT DEFAULT 'ok',
+            duration_ms REAL,
+            prompt_tokens INTEGER DEFAULT 0,
+            completion_tokens INTEGER DEFAULT 0,
+            total_tokens INTEGER DEFAULT 0,
+            model TEXT,
+            cache_hit INTEGER DEFAULT 0,
+            error TEXT,
+            intent TEXT,
+            metadata TEXT,
+            created_at TEXT NOT NULL
+        )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_spans_trace ON spans(trace_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_spans_agent ON spans(agent)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_spans_type ON spans(type)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_spans_created ON spans(created_at)")
+
     # Create indexes
     cursor.execute(
         "CREATE INDEX IF NOT EXISTS idx_issues_developer ON developer_issues(developer_name)"
@@ -490,3 +518,47 @@ def record_team_metric(
 
     conn.commit()
     conn.close()
+
+# ── Span persistence (observability) ──
+
+def write_span(log_entry):
+    """Write a single span to the SQLite spans table.
+
+    Dual-write companion to BaseAgent._write_trace(): JSONL for cold backup,
+    SQLite for hot dashboard queries. Silently skips legacy entries that lack
+    span_id / trace_id.
+    """
+    import sqlite3
+
+    span_id = log_entry.get("span_id")
+    trace_id = log_entry.get("trace_id")
+    if not span_id or not trace_id:
+        return
+
+    try:
+        conn = sqlite3.connect(settings.db_path)
+        conn.execute(
+            """INSERT OR REPLACE INTO spans
+               (span_id, parent_span_id, trace_id, session_id, agent, type,
+                action, status, duration_ms, prompt_tokens, completion_tokens,
+                total_tokens, model, cache_hit, error, intent, metadata, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                span_id, log_entry.get("parent_span_id"), trace_id,
+                log_entry.get("session_id"), log_entry.get("agent", ""),
+                log_entry.get("type", "agent_process"),
+                log_entry.get("action", ""), log_entry.get("status", "ok"),
+                log_entry.get("duration_ms"),
+                log_entry.get("prompt_tokens") or 0,
+                log_entry.get("completion_tokens") or 0,
+                log_entry.get("total_tokens") or 0,
+                log_entry.get("model"),
+                1 if log_entry.get("cache_hit") else 0,
+                log_entry.get("error"), log_entry.get("intent"),
+                None, log_entry.get("timestamp", ""),
+            ),
+        )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass

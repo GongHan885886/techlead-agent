@@ -50,6 +50,15 @@ class OrchestratorAgent(BaseAgent):
         # Specialist agents will be initialized lazily
         self._specialists = {}
 
+    def _propagate_trace(self, agent: "BaseAgent"):
+        """Pass trace context from orchestrator to a sub-agent.
+
+        This ensures the sub-agent's spans share the same trace_id
+        and form a proper parent-child tree.
+        """
+        agent._trace_id = self._trace_id
+        agent._parent_span_id = self._current_span_id
+
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """Process user request and route to specialist agents.
 
@@ -62,8 +71,11 @@ class OrchestratorAgent(BaseAgent):
         message = input_data.get("message", "")
         session_id = input_data.get("session_id") or str(uuid.uuid4())
 
+        # ── Tracing: create or inherit trace_id ──
+        self._trace_id = input_data.get("trace_id") or str(uuid.uuid4())
+        self._start_span("orchestrate")
+
         self.set_session(session_id)
-        self._log_execution("orchestrate", input_data, {})
 
         # Clean up expired sessions
         self.session_manager.cleanup_expired_sessions()
@@ -71,7 +83,9 @@ class OrchestratorAgent(BaseAgent):
         # Check for pending confirmations first
         pending = self.session_manager.get_pending_task(session_id)
         if pending:
-            return await self._handle_confirmation(message, pending)
+            result = await self._handle_confirmation(message, pending)
+            self._end_span(intent="confirm")
+            return result
 
         # Identify user intent
         intent = self._identify_intent(message)
@@ -101,6 +115,7 @@ class OrchestratorAgent(BaseAgent):
         if result:
             await self._send_notification(intent, result)
 
+        self._end_span(intent=intent)
         return result
 
     def _identify_intent(self, message: str) -> str:
@@ -202,6 +217,7 @@ class OrchestratorAgent(BaseAgent):
         from tools.tapd_client import get_tapd_client
 
         reviewer = DesignReviewerAgent()
+        self._propagate_trace(reviewer)
         author = input_data.get("author")
         scenario = input_data.get("scenario")
         message = input_data.get("message", "")
@@ -375,6 +391,7 @@ class OrchestratorAgent(BaseAgent):
 
         # Get delivery analysis
         delivery_agent = DeliveryTrackerAgent()
+        self._propagate_trace(delivery_agent)
         delivery_result = await delivery_agent.process({"days": 7})
 
         # Get team overview

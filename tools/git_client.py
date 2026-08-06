@@ -10,6 +10,9 @@ import httpx
 
 from config import settings
 from tools.cache_manager import get_cache_manager
+from utils.logger import get_logger
+
+_logger = get_logger("git_client")
 
 
 class GitClient:
@@ -73,7 +76,7 @@ class GitClient:
             List of MR dictionaries
         """
         if not self.is_configured():
-            print("⚠️  Git not configured, returning mock data")
+            _logger.warning("Git not configured, returning mock data")
             return self._mock_mrs()
 
         project_id = project_id or self.project_id

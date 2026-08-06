@@ -666,6 +666,176 @@ def developer_radar(demo: bool = Query(False)):
     return result
 
 
+# ── API: LLM cost & efficiency ──
+
+# Approximate pricing per 1M tokens (input / output)
+PRICING = {
+    "gpt-4o": (2.50, 10.00),
+    "gpt-4o-mini": (0.15, 0.60),
+    "gpt-4": (30.00, 60.00),
+    "deepseek-v3": (0.27, 1.10),
+    "deepseek-r1": (0.55, 2.19),
+    "gpt-4o-m": (2.50, 10.00),   # mock model in tests
+    "gpt-4o-mock": (2.50, 10.00),
+    "default": (2.50, 10.00),
+}
+
+
+def _cost_estimate(prompt_tokens: int, completion_tokens: int, model: str) -> float:
+    """Estimate cost in USD. Returns 0 for unknown models."""
+    price = PRICING.get(model, PRICING["default"])
+    return (prompt_tokens / 1_000_000) * price[0] + (completion_tokens / 1_000_000) * price[1]
+
+
+@app.get("/api/cost")
+def cost_summary(days: int = Query(7), demo: bool = Query(False)):
+    """LLM cost and token summary for the last N days."""
+    conn = get_db(demo)
+    cur = conn.cursor()
+    try:
+        cur.execute(f"""
+            SELECT agent, model,
+                   COUNT(*) as calls,
+                   SUM(CASE WHEN cache_hit=1 THEN 1 ELSE 0 END) as cache_hits,
+                   SUM(prompt_tokens) as prompt_tok,
+                   SUM(completion_tokens) as comp_tok,
+                   SUM(total_tokens) as total_tok,
+                   AVG(duration_ms) as avg_dur,
+                   SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) as errors
+            FROM spans
+            WHERE type='llm_call' AND created_at > datetime('now', '-{days} days')
+            GROUP BY agent, model
+            ORDER BY total_tok DESC
+        """)
+        rows = cur.fetchall()
+    except Exception:
+        rows = []
+
+    results = []
+    total_cost = 0.0
+    total_tokens = 0
+    total_calls = 0
+    for r in rows:
+        cost = _cost_estimate(r["prompt_tok"] or 0, r["comp_tok"] or 0, r["model"] or "")
+        total_cost += cost
+        total_tokens += (r["total_tok"] or 0)
+        total_calls += r["calls"]
+        results.append({
+            "agent": r["agent"], "model": r["model"],
+            "calls": r["calls"], "cache_hits": r["cache_hits"],
+            "prompt_tokens": r["prompt_tok"] or 0,
+            "completion_tokens": r["comp_tok"] or 0,
+            "total_tokens": r["total_tok"] or 0,
+            "avg_duration_ms": round(r["avg_dur"] or 0, 1),
+            "errors": r["errors"],
+            "cost_estimate": round(cost, 4),
+        })
+    conn.close()
+    return {"days": days, "total_cost": round(total_cost, 4),
+            "total_tokens": total_tokens, "total_calls": total_calls,
+            "breakdown": results}
+
+
+@app.get("/api/latency")
+def latency_stats(days: int = Query(7), demo: bool = Query(False)):
+    """P50/P95/P99 latency per agent from span data."""
+    conn = get_db(demo)
+    cur = conn.cursor()
+    try:
+        cur.execute(f"""
+            SELECT agent,
+                   AVG(duration_ms) as avg_ms,
+                   COUNT(*) as calls
+            FROM spans
+            WHERE type='llm_call' AND status='ok' AND duration_ms > 0
+                  AND created_at > datetime('now', '-{days} days')
+            GROUP BY agent ORDER BY avg_ms DESC
+        """)
+        rows = cur.fetchall()
+    except Exception:
+        rows = []
+
+    results = []
+    for r in rows:
+        cur.execute(f"""
+            SELECT duration_ms FROM spans
+            WHERE type='llm_call' AND status='ok' AND duration_ms > 0
+                  AND agent=? AND created_at > datetime('now', '-{days} days')
+            ORDER BY duration_ms
+        """, (r["agent"],))
+        vals = [v[0] for v in cur.fetchall()]
+        if not vals:
+            continue
+        vals.sort()
+        n = len(vals)
+        results.append({
+            "agent": r["agent"],
+            "calls": r["calls"],
+            "avg_ms": round(r["avg_ms"] or 0, 1),
+            "p50_ms": round(vals[n // 2], 1),
+            "p95_ms": round(vals[int(n * 0.95)], 1),
+            "p99_ms": round(vals[int(n * 0.99)], 1),
+            "max_ms": round(vals[-1], 1),
+        })
+    conn.close()
+    return {"days": days, "agents": results}
+
+
+@app.get("/api/llm-trends")
+def llm_trends(days: int = Query(30), demo: bool = Query(False)):
+    """Daily LLM call volume and token consumption trend."""
+    conn = get_db(demo)
+    cur = conn.cursor()
+    try:
+        cur.execute(f"""
+            SELECT date(created_at) as day,
+                   COUNT(*) as calls,
+                   SUM(CASE WHEN cache_hit=1 THEN 1 ELSE 0 END) as cache_hits,
+                   SUM(total_tokens) as total_tok,
+                   SUM(prompt_tokens) as prompt_tok,
+                   SUM(completion_tokens) as comp_tok
+            FROM spans
+            WHERE type='llm_call' AND created_at > datetime('now', '-{days} days')
+            GROUP BY day ORDER BY day
+        """)
+        rows = cur.fetchall()
+    except Exception:
+        rows = []
+    conn.close()
+    return {"days": days, "daily": [dict(r) for r in rows]}
+
+
+@app.get("/api/cache-efficiency")
+def cache_efficiency(days: int = Query(7), demo: bool = Query(False)):
+    """Cache hit rate and estimated token savings."""
+    conn = get_db(demo)
+    cur = conn.cursor()
+    try:
+        cur.execute(f"""
+            SELECT agent,
+                   COUNT(*) as total,
+                   SUM(CASE WHEN cache_hit=1 THEN 1 ELSE 0 END) as hits,
+                   SUM(CASE WHEN cache_hit=1 THEN total_tokens ELSE 0 END) as tokens_saved
+            FROM spans
+            WHERE type='llm_call' AND created_at > datetime('now', '-{days} days')
+            GROUP BY agent ORDER BY hits DESC
+        """)
+        rows = cur.fetchall()
+    except Exception:
+        rows = []
+    results = []
+    for r in rows:
+        results.append({
+            "agent": r["agent"],
+            "total_calls": r["total"],
+            "cache_hits": r["hits"],
+            "hit_rate": round(r["hits"] / r["total"] * 100, 1) if r["total"] else 0,
+            "tokens_saved": r["tokens_saved"] or 0,
+        })
+    conn.close()
+    return {"days": days, "agents": results}
+
+
 # ── API: Learning advice (personalized improvement plan) ──
 @app.get("/api/learning/{name}")
 async def learning_advice(

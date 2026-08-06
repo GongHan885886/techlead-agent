@@ -10,6 +10,9 @@ from datetime import datetime
 import httpx
 
 from config import settings
+from utils.logger import get_logger
+
+_logger = get_logger("notifier")
 
 
 class Notifier:
@@ -54,7 +57,7 @@ class Notifier:
             bool: Success status
         """
         if not self.enabled:
-            print(f"🔕 Notifications disabled: {title}")
+            _logger.info(f"Notifications disabled: {title}")
             return False
 
         try:
@@ -63,11 +66,11 @@ class Notifier:
             elif channel == "email":
                 return self._send_email(title, content, metadata)
             else:
-                print(f"⚠️  Unknown notification channel: {channel}")
+                _logger.warning(f"Unknown notification channel: {channel}")
                 return False
 
         except Exception as e:
-            print(f"⚠️  Failed to send notification: {e}")
+            _logger.warning(f"Failed to send notification: {e}")
             return False
 
     def _send_webhook(
