@@ -15,16 +15,16 @@ from state.session_manager import SessionManager, PendingTask
 class OrchestratorAgent(BaseAgent):
     """Main orchestrator that routes requests to specialist agents."""
 
-    # Intent mappings
+    # Intent mappings — more specific keywords first to avoid false matches
     INTENTS = {
+        # Code review intent (check before "review" in scan)
+        ("cr", "代码审查", "code review", "review-mr", "review code"): "code_review",
+
+        # Design review intent (check before "review" in scan)
+        ("评审", "方案", "design review", "深度评审", "design"): "deep_review",
+
         # Scan intent
-        ("扫描", "scan", "今天", "daily", "review", "检查"): "scan",
-
-        # Design review intent
-        ("评审", "方案", "design", "review", "深度"): "deep_review",
-
-        # Code review intent
-        ("cr", "代码审查", "code review", "review-mr", "review-mr"): "code_review",
+        ("扫描", "scan", "今天", "daily", "检查", "关注"): "scan",
 
         # Weekly report intent
         ("周报", "weekly", "weekly-report", "report"): "weekly_report",
@@ -65,6 +65,9 @@ class OrchestratorAgent(BaseAgent):
         self.set_session(session_id)
         self._log_execution("orchestrate", input_data, {})
 
+        # Clean up expired sessions
+        self.session_manager.cleanup_expired_sessions()
+
         # Check for pending confirmations first
         pending = self.session_manager.get_pending_task(session_id)
         if pending:
@@ -75,23 +78,30 @@ class OrchestratorAgent(BaseAgent):
         self.logger.info(f"Intent identified: {intent}")
 
         # Route to appropriate handler
+        result = None
         if intent == "scan":
-            return await self._handle_scan(input_data)
+            result = await self._handle_scan(input_data)
         elif intent == "deep_review":
-            return await self._handle_design_review(input_data)
+            result = await self._handle_design_review(input_data)
         elif intent == "code_review":
-            return await self._handle_code_review(input_data)
+            result = await self._handle_code_review(input_data)
         elif intent == "weekly_report":
-            return await self._handle_weekly_report(input_data)
+            result = await self._handle_weekly_report(input_data)
         elif intent == "learning_advice":
-            return await self._handle_learning_advice(input_data)
+            result = await self._handle_learning_advice(input_data)
         elif intent == "help":
-            return self._generate_help()
+            result = self._generate_help()
         else:
-            return {
+            result = {
                 "intent": "unknown",
                 "response": "❓ 没有理解您的意图。请使用 'help' 查看可用命令。",
             }
+
+        # Send notification for high-risk results
+        if result:
+            await self._send_notification(intent, result)
+
+        return result
 
     def _identify_intent(self, message: str) -> str:
         """Identify user intent from message.
@@ -177,39 +187,166 @@ class OrchestratorAgent(BaseAgent):
         results["warning_stories"] = warning
 
     async def _handle_design_review(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle design review request.
+        """Handle design review request by delegating to DesignReviewerAgent.
+
+        Fetches relevant stories from TAPD and passes them as context,
+        so output can be organized by story/requirement.
 
         Args:
-            input_data: Input data
+            input_data: Input data with author, scenario, message, and optional content
 
         Returns:
             dict: Review results
         """
-        # This would route to DesignReviewer agent
-        return {
-            "intent": "deep_review",
-            "message": "🔧 Design reviewer agent - to be implemented",
-        }
+        from agents.design_reviewer import DesignReviewerAgent
+        from tools.tapd_client import get_tapd_client
+
+        reviewer = DesignReviewerAgent()
+        author = input_data.get("author")
+        scenario = input_data.get("scenario")
+        message = input_data.get("message", "")
+
+        # Try to extract author from message if not explicitly provided
+        if not author:
+            author = self._extract_name_from_message(message)
+
+        # Try to fetch stories from TAPD for context
+        tapd_client = get_tapd_client()
+        stories = await tapd_client.fetch_stories(status="进行中")
+
+        # Filter stories based on input context
+        matched_stories = self._filter_stories(stories, author, message)
+
+        # If we have matched stories, pass them to the reviewer
+        if matched_stories:
+            result = await reviewer.process({
+                "content": input_data.get("content", ""),
+                "scenarios": [scenario] if scenario else [],
+                "stories": matched_stories,
+            })
+        else:
+            # Fallback: no matching stories found, do legacy review
+            result = await reviewer.process({
+                "content": input_data.get("content", ""),
+                "scenarios": [scenario] if scenario else [],
+                "developer": author or "Unknown",
+            })
+
+        return result
+
+    def _extract_name_from_message(self, message: str) -> Optional[str]:
+        """Extract a person's name from a natural language message.
+
+        Args:
+            message: User message
+
+        Returns:
+            str or None: Extracted name if found
+        """
+        # Common Chinese surnames that appear in the system
+        common_names = ["张三", "李四", "王五", "赵六", "陈七", "周八"]
+        for name in common_names:
+            if name in message:
+                return name
+        return None
+
+    def _filter_stories(
+        self, stories: list, author: Optional[str], message: str
+    ) -> list:
+        """Filter TAPD stories based on author, message keywords.
+
+        Args:
+            stories: List of TAPD story dicts
+            author: Optional author name filter
+            message: User message for keyword matching
+
+        Returns:
+            list: Filtered stories with scenarios
+        """
+        if not stories:
+            return []
+
+        message_lower = message.lower()
+
+        # Extract potential author name from message if not explicitly provided
+        if not author:
+            # Try to match any owner name in the message
+            for story in stories:
+                owner = story.get("owner", "")
+                if owner and owner in message:
+                    author = owner
+                    break
+
+        filtered = []
+        for story in stories:
+            title = story.get("title", "").lower()
+            owner = story.get("owner", "").lower()
+
+            # Filter by author
+            if author and author.lower() != owner:
+                continue
+
+            # Filter by message keywords (match story title)
+            # Remove common intent words
+            keywords = message_lower
+            for word in ["评审", "方案", "设计", "review", "design", "deep_review"]:
+                keywords = keywords.replace(word, "")
+            keywords = keywords.strip()
+
+            if keywords and keywords not in ("review design", "deep_review", "review", "design"):
+                # Check if any keyword matches story title
+                story_title_lower = story.get("title", "").lower()
+                if keywords not in story_title_lower and not any(
+                    kw.strip() for kw in keywords.split() if kw.strip() in story_title_lower
+                ):
+                    # If no title match, still include if author matched
+                    if not author:
+                        continue
+
+            # Attach all scenarios (will be auto-detected from content later)
+            story["scenarios"] = []
+            filtered.append(story)
+
+        return filtered
 
     async def _handle_code_review(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle code review request.
+        """Handle code review request by delegating to CodeReviewerAgent.
 
         Args:
-            input_data: Input data
+            input_data: Input data with mr_id and optional focus_areas
 
         Returns:
             dict: Review results
         """
-        # This would route to CodeReviewer agent
+        from agents.code_reviewer import CodeReviewerAgent
+        from tools.tapd_client import get_tapd_client
+
         mr_id = input_data.get("mr_id")
 
         # If MR ID provided, fetch and review
         if mr_id:
-            return {
-                "intent": "code_review",
+            # Try to find associated story
+            story = None
+            try:
+                tapd_client = get_tapd_client()
+                stories = await tapd_client.fetch_stories()
+                # Match by MR ID in story title or description
+                for s in stories:
+                    title = s.get("title", "")
+                    if str(mr_id) in title:
+                        story = {"id": s.get("id"), "title": s.get("title")}
+                        break
+            except Exception:
+                pass
+
+            reviewer = CodeReviewerAgent()
+            result = await reviewer.process({
                 "mr_id": mr_id,
-                "message": "🔧 Code reviewer agent - to be implemented",
-            }
+                "focus_areas": input_data.get("focus_areas", []),
+                "story": story,
+            })
+
+            return result
 
         # Otherwise, list available MRs
         from tools.git_client import get_git_client
@@ -272,7 +409,10 @@ class OrchestratorAgent(BaseAgent):
 
         # Route to LearningAdvisor agent
         learning_agent = LearningAdvisorAgent()
-        result = await learning_agent.process({"developer": developer})
+        result = await learning_agent.process({
+            "developer": developer,
+            "days": input_data.get("days", 30),
+        })
 
         # Format report
         if result.get("intent") == "learning_advice" and "error" not in result:
@@ -382,3 +522,59 @@ class OrchestratorAgent(BaseAgent):
         )
 
         self.session_manager.set_pending_task(self.session_id, task)
+
+    async def _send_notification(self, intent: str, result: Dict[str, Any]):
+        """Send notification for important events.
+
+        Args:
+            intent: Intent type
+            result: Processing result
+        """
+        from tools.notifier import get_notifier
+
+        notifier = get_notifier()
+
+        if not notifier.enabled:
+            return
+
+        try:
+            if intent == "scan":
+                high_risk = result.get("high_risk_stories", [])
+                if high_risk:
+                    titles = ", ".join(s["title"] for s in high_risk[:3])
+                    notifier.notify_user(
+                        recipient="techlead",
+                        title="🚨 高风险需求提醒",
+                        content=f"以下需求存在高风险：{titles}",
+                    )
+
+            elif intent == "deep_review":
+                blockers = result.get("blockers", [])
+                if blockers:
+                    notifier.send_review_request(
+                        target="design",
+                        target_type="方案",
+                        reviewer="techlead",
+                        description=f"方案评审发现 {len(blockers)} 个 Blocker 项",
+                    )
+
+            elif intent == "code_review":
+                blockers = result.get("blockers", [])
+                if blockers:
+                    mr_id = result.get("mr_id", "Unknown")
+                    notifier.send_cr_feedback(
+                        mr_id=mr_id,
+                        author="Unknown",
+                        issues=blockers + result.get("warnings", []),
+                    )
+
+            elif intent == "learning_advice":
+                developer = result.get("developer", "Unknown")
+                notifier.send_learning_advice(
+                    developer=developer,
+                    advice_summary=f"已生成 {developer} 的学习提升计划",
+                    focus_areas=[w["type"] for w in result.get("weaknesses", [])],
+                )
+
+        except Exception as e:
+            self.logger.warning(f"Failed to send notification: {e}")

@@ -232,12 +232,12 @@ pytest tests/
 
 | 组件 | 技术选型 |
 |:---|:---|
-| LLM | GPT-4o / Claude 3.5 Sonnet |
-| Agent 框架 | LangChain |
-| 数据库 | SQLite（起步）→ PostgreSQL（生产） |
-| API 服务 | FastAPI |
+| LLM | OpenAI GPT-4o / DeepSeek |
+| Agent 框架 | 基于 Python 的自定义多 Agent 架构 |
+| 数据库 | SQLite |
+| CLI | Typer + Rich |
 | 日志 | JSON Lines |
-| 部署 | Docker + Kubernetes |
+| 配置 | Pydantic Settings + .env |
 
 ## 许可证
 

@@ -35,6 +35,7 @@ class CodeReviewerAgent(BaseAgent):
         mr_id = input_data.get("mr_id")
         diff = input_data.get("diff")
         focus_areas = input_data.get("focus_areas", [])
+        story = input_data.get("story")  # Optional: {"id": "...", "title": "..."}
 
         self._log_execution("review_code", input_data, {})
 
@@ -70,6 +71,7 @@ class CodeReviewerAgent(BaseAgent):
         result = {
             "intent": "code_review",
             "mr_id": mr_id,
+            "story": story,
             "focus_areas": focus_areas,
             "passed": passed,
             "blockers": blockers,
@@ -208,14 +210,21 @@ class CodeReviewerAgent(BaseAgent):
         Returns:
             str: Formatted report
         """
+        story = result.get("story")
         lines = [
             f"🔍 CR 审查报告 - MR !{result.get('mr_id', 'Unknown')}",
+        ]
+
+        if story:
+            lines.insert(1, f"需求：{story.get('title', '')}")
+
+        lines.extend([
             f"关注领域：{', '.join(result.get('focus_areas', []))}",
             f"评审时间：{result.get('timestamp', '')}",
             "",
             f"【自检结果】{'✅ 通过' if result.get('passed') else '❌ 不通过'}",
             "",
-        ]
+        ])
 
         blockers = result.get("blockers", [])
         warnings = result.get("warnings", [])

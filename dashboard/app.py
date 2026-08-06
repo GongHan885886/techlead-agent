@@ -26,12 +26,51 @@ def get_db(demo: bool = False):
     return conn
 
 
-# ── Problem radar ──
+# ── Problem radar with trend direction ──
 @app.get("/api/problems")
 def problems(demo: bool = Query(False)):
     conn = get_db(demo)
     cur = conn.cursor()
     problems_list = []
+
+    # Helper: compute trend direction for a developer metric
+    def _metric_trend(metric_type, developer=None, days=30):
+        """Return 'up' (worsening), 'down' (improving), or 'stable'."""
+        halves = days // 2
+        if developer:
+            cur.execute(f"""
+                SELECT AVG(metric_value) as avg_val, MIN(timestamp) as t
+                FROM team_metrics
+                WHERE metric_type=? AND json_extract(metadata, '$.developer') = ?
+                  AND timestamp > datetime('now', '-{days} days')
+                GROUP BY strftime('%Y-%m-%d', timestamp) ORDER BY t
+            """, (metric_type, developer))
+        else:
+            cur.execute(f"""
+                SELECT AVG(metric_value) as avg_val, MIN(timestamp) as t
+                FROM team_metrics
+                WHERE metric_type=?
+                  AND timestamp > datetime('now', '-{days} days')
+                GROUP BY strftime('%Y-%m-%d', timestamp) ORDER BY t
+            """, (metric_type,))
+        rows = cur.fetchall()
+        if len(rows) < 4:
+            return "stable"
+        mid = len(rows) // 2
+        first_half = [r['avg_val'] for r in rows[:mid] if r['avg_val']]
+        second_half = [r['avg_val'] for r in rows[mid:] if r['avg_val']]
+        if not first_half or not second_half:
+            return "stable"
+        avg1 = sum(first_half) / len(first_half)
+        avg2 = sum(second_half) / len(second_half)
+        if avg1 == 0:
+            return "stable"
+        ratio = avg2 / avg1
+        if ratio > 1.15:
+            return "up"  # worsening
+        elif ratio < 0.85:
+            return "down"  # improving
+        return "stable"
 
     # 1. High blocker count
     cur.execute("""
@@ -41,12 +80,14 @@ def problems(demo: bool = Query(False)):
         ORDER BY blocker_count DESC
     """)
     for row in cur.fetchall():
+        trend = _metric_trend("defect_rate", row['developer_name'])
         problems_list.append({
             "type": "blocker_overload", "severity": "critical",
             "title": f"{row['developer_name']} Blocker 过多",
             "detail": f"累计 {row['blocker_count']} 个 Blocker（共 {row['total_issues']} 个问题），远高于团队正常水平",
             "action": "安排 1on1 沟通，检查是否有技术债或资源不足问题",
             "developer": row['developer_name'], "metric": row['blocker_count'],
+            "trend": trend,
         })
 
     # 2. Delivery efficiency anomaly
@@ -62,12 +103,14 @@ def problems(demo: bool = Query(False)):
         team_avg = sum(dev_delivery.values()) / len(dev_delivery)
         for dev, avg in sorted(dev_delivery.items(), key=lambda x: -x[1]):
             if avg > team_avg * 1.3:
+                trend = _metric_trend("avg_delivery_days", dev)
                 problems_list.append({
                     "type": "efficiency_anomaly", "severity": "warning",
                     "title": f"{dev} 交付周期偏长",
                     "detail": f"平均 {avg:.1f} 天，团队均值 {team_avg:.1f} 天（↑ {(avg/team_avg-1)*100:.0f}%）",
                     "action": "Review 该开发者的需求拆分粒度，是否存在阻塞依赖",
                     "developer": dev, "metric": round(avg, 1),
+                    "trend": trend,
                 })
 
     # 3. Quality anomaly
@@ -83,12 +126,14 @@ def problems(demo: bool = Query(False)):
         team_avg = sum(dev_defect.values()) / len(dev_defect)
         for dev, avg in sorted(dev_defect.items(), key=lambda x: -x[1]):
             if avg > team_avg * 1.5:
+                trend = _metric_trend("defect_rate", dev)
                 problems_list.append({
                     "type": "quality_anomaly", "severity": "warning",
                     "title": f"{dev} 缺陷率偏高",
                     "detail": f"缺陷率 {avg:.2f} 分/天，团队均值 {team_avg:.2f}（↑ {(avg/team_avg-1)*100:.0f}%）",
                     "action": "CR 阶段加强对该开发者代码的审查，确认是否为新增需求导致的短期波动",
                     "developer": dev, "metric": round(avg, 2),
+                    "trend": trend,
                 })
 
     # 4. CR throughput declining
@@ -113,6 +158,7 @@ def problems(demo: bool = Query(False)):
                 "detail": f"近 7 天日均 CR {avg2:.1f} 次，较之前 {avg1:.1f} 次下降 {(1-avg2/avg1)*100:.0f}%",
                 "action": "排查是否有团队阻塞（上线压力/需求变更），必要时拉通全员 CR 时间",
                 "developer": None, "metric": round(avg2, 1),
+                "trend": "up",  # throughput down is bad
             })
 
     # 5. CR turnaround time
@@ -125,12 +171,14 @@ def problems(demo: bool = Query(False)):
     row = cur.fetchone()
     avg_turnaround = row['avg_hours'] if row and row['avg_hours'] else 0
     if avg_turnaround > 12:
+        trend = _metric_trend("cr_turnaround")
         problems_list.append({
             "type": "slow_review", "severity": "info",
             "title": "CR 平均周转时间过长",
             "detail": f"平均 {avg_turnaround:.1f} 小时（> 12 小时），等待时间影响交付节奏",
             "action": "建议设 CR SLA：普通 MR 8 小时内响应，紧急 MR 4 小时内",
             "developer": None, "metric": round(avg_turnaround, 1),
+            "trend": trend,
         })
 
     # 6. Hot issue types
@@ -191,16 +239,157 @@ def overview(demo: bool = Query(False)):
             "issues_30d": issue_count, "blockers_30d": blocker_count, "pass_rate": pass_rate}
 
 
+# ── My Todo / Action items ──
+@app.get("/api/todo")
+def todo(demo: bool = Query(False)):
+    """Aggregate today's action items for the tech lead."""
+    conn = get_db(demo)
+    cur = conn.cursor()
+    items = []
+
+    # 1. Pending reviews (MRs needing review)
+    cur.execute("""
+        SELECT COUNT(*) as cnt FROM review_history
+        WHERE review_type='code_review' AND result='pending'
+          AND created_at > datetime('now', '-7 days')
+    """)
+    pending_reviews = cur.fetchone()[0]
+
+    # 2. Overdue / high-risk requirements needing attention
+    cur.execute("""
+        SELECT COUNT(*) as cnt FROM stories
+        WHERE (risk='高' OR blocked=1) AND status != '已完成'
+    """)
+    urgent_requirements = cur.fetchone()[0]
+
+    # 3. Overdue requirements
+    cur.execute("""
+        SELECT COUNT(*) as cnt FROM stories
+        WHERE due_date < datetime('now', 'localtime') AND status != '已完成'
+    """)
+    overdue = cur.fetchone()[0]
+
+    # 4. Developers with blocker overload
+    cur.execute("""
+        SELECT developer_name, blocker_count FROM developer_profiles
+        WHERE blocker_count > 5 ORDER BY blocker_count DESC
+    """)
+    troubled_devs = [dict(r) for r in cur.fetchall()]
+
+    # 5. Unresolved blocker issues this week
+    cur.execute("""
+        SELECT COUNT(*) as cnt FROM developer_issues
+        WHERE severity='blocker' AND created_at > datetime('now', '-7 days')
+    """)
+    new_blockers = cur.fetchone()[0]
+
+    # 6. Open MRs (mock: from review_history pending)
+    cur.execute("""
+        SELECT COUNT(*) as cnt FROM review_history
+        WHERE review_type='code_review' AND result='pending'
+    """)
+    open_mrs = cur.fetchone()[0]
+
+    conn.close()
+
+    # Build action items
+    if pending_reviews > 0:
+        items.append({
+            "icon": "🔍", "severity": "warning",
+            "title": f"{pending_reviews} 个待审 MR",
+            "detail": "等待你进行代码审查，建议优先处理",
+            "action": "python main.py review-mr --mr-id <id>",
+            "scroll": "dev-detail-table",
+        })
+    if urgent_requirements > 0:
+        items.append({
+            "icon": "🚨", "severity": "critical",
+            "title": f"{urgent_requirements} 个高风险/阻塞需求",
+            "detail": "需要立即介入，排查阻塞原因",
+            "action": "查看需求进度表，联系负责人",
+            "scroll": "requirements-panel",
+        })
+    if overdue > 0:
+        items.append({
+            "icon": "⏰", "severity": "critical",
+            "title": f"{overdue} 个已超期需求",
+            "detail": "已超过截止日期，确认是否要调整计划",
+            "action": "与负责人沟通，评估影响范围",
+            "scroll": "requirements-panel",
+        })
+    if troubled_devs:
+        names = ", ".join(d["developer_name"] for d in troubled_devs[:3])
+        items.append({
+            "icon": "👤", "severity": "warning",
+            "title": f"{len(troubled_devs)} 位开发者需关注",
+            "detail": f"{names} Blocker 数量偏高，建议安排 1on1",
+            "action": "查看开发者详情，了解具体问题类型",
+            "scroll": "dev-leaderboard",
+        })
+    if new_blockers > 0:
+        items.append({
+            "icon": "🐛", "severity": "info",
+            "title": f"本周新增 {new_blockers} 个 Blocker",
+            "detail": "建议在周会中回顾，避免同类问题反复出现",
+            "action": "安排专题分享，更新编码规范",
+            "scroll": "problem-radar",
+        })
+    if not items:
+        items.append({
+            "icon": "✅", "severity": "good",
+            "title": "暂无待办事项",
+            "detail": "团队状态良好，继续保持",
+            "action": "",
+            "scroll": "",
+        })
+
+    return {"items": items, "total": len(items)}
+
+
+# ── Issue type breakdown by severity ──
+@app.get("/api/issue-breakdown")
+def issue_breakdown(demo: bool = Query(False)):
+    """Return issue counts grouped by type and severity for stacked bar chart."""
+    conn = get_db(demo)
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT issue_type, severity, COUNT(*) as cnt
+        FROM developer_issues
+        WHERE created_at > datetime('now', '-30 days')
+        GROUP BY issue_type, severity
+        ORDER BY issue_type, severity
+    """)
+    rows = cur.fetchall()
+    conn.close()
+
+    # Organize: { type: { blocker: N, warning: N, info: N } }
+    breakdown = {}
+    for r in rows:
+        t = r["issue_type"]
+        if t not in breakdown:
+            breakdown[t] = {"blocker": 0, "warning": 0, "info": 0}
+        breakdown[t][r["severity"]] = r["cnt"]
+    return breakdown
+
+
 # ── Developer list ──
 @app.get("/api/developers")
 def developers(demo: bool = Query(False)):
     conn = get_db(demo)
     cur = conn.cursor()
-    cur.execute("""
-        SELECT developer_name, total_issues, blocker_count, warning_count,
-               top_issue_types, tier, last_updated
-        FROM developer_profiles ORDER BY total_issues DESC
-    """)
+    # tier column may not exist in all databases (e.g. memory.db), so try/fallback
+    try:
+        cur.execute("""
+            SELECT developer_name, total_issues, blocker_count, warning_count,
+                   top_issue_types, tier, last_updated
+            FROM developer_profiles ORDER BY total_issues DESC
+        """)
+    except Exception:
+        cur.execute("""
+            SELECT developer_name, total_issues, blocker_count, warning_count,
+                   top_issue_types, '' as tier, last_updated
+            FROM developer_profiles ORDER BY total_issues DESC
+        """)
     rows = cur.fetchall()
     conn.close()
     return [dict(r) for r in rows]
@@ -368,6 +557,13 @@ def dashboard_demo():
     return _render_dashboard()
 
 
+# ── Learning advice page ──
+@app.get("/learning", response_class=HTMLResponse)
+def learning_page():
+    """Render the personalized learning advice page."""
+    html_path = Path(__file__).parent / "templates" / "learning.html"
+    return html_path.read_text(encoding="utf-8")
+
 
 # ── API: Developer radar (5-dimension profile, 0-100) ──
 @app.get("/api/developer-radar")
@@ -468,6 +664,54 @@ def developer_radar(demo: bool = Query(False)):
 
     conn.close()
     return result
+
+
+# ── API: Learning advice (personalized improvement plan) ──
+@app.get("/api/learning/{name}")
+async def learning_advice(
+    name: str, days: int = Query(30), demo: bool = Query(False)
+):
+    """Generate a personalized learning plan for a developer.
+
+    Calls LearningAdvisorAgent.process() which uses LLM to analyze
+    error patterns, recommend targeted resources, and generate
+    verification quizzes.
+    """
+    from agents.learning_advisor import LearningAdvisorAgent
+    from config import settings
+    import os
+
+    agent = LearningAdvisorAgent()
+
+    # When demo=True, temporarily point the agent at the demo database
+    saved_db_path = None
+    if demo:
+        saved_db_path = os.environ.get("DB_PATH", settings.db_path)
+        os.environ["DB_PATH"] = DEMO_DB_PATH
+        settings.db_path = DEMO_DB_PATH
+
+    try:
+        raw = await agent.process({"developer": name, "days": days})
+    finally:
+        if saved_db_path:
+            os.environ["DB_PATH"] = saved_db_path
+            settings.db_path = saved_db_path
+
+    # Build a response that includes both the raw result and the
+    # formatted markdown report
+    return {
+        "developer": raw.get("developer", name),
+        "days": days,
+        "timestamp": raw.get("timestamp", ""),
+        "profile": raw.get("profile", {}),
+        "weaknesses": raw.get("weaknesses", []),
+        "team_metrics": raw.get("team_metrics", {}),
+        "root_causes": raw.get("root_causes", {}),
+        "recommendations": raw.get("recommendations", []),
+        "collaboration": raw.get("collaboration", []),
+        "has_error": "error" in raw,
+        "error_message": raw.get("error", ""),
+    }
 
 
 if __name__ == "__main__":

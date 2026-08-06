@@ -4,6 +4,7 @@ All specialist agents inherit from this base class.
 """
 
 from abc import ABC, abstractmethod
+import json
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 from datetime import datetime

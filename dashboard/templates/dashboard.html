@@ -23,6 +23,26 @@ body {
 .header h1 span { color: var(--accent); }
 .header-right { display: flex; align-items: center; gap: 16px; font-size: 13px; color: var(--text-muted); }
 
+/* ── Todo Panel ── */
+.todo-panel { margin-bottom: 24px; }
+.todo-panel .header-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.todo-panel .header-row h2 { font-size: 16px; font-weight: 600; }
+.todo-list { display: flex; flex-direction: column; gap: 8px; }
+.todo-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 14px 18px; transition: background 0.15s; cursor: pointer;
+}
+.todo-item:hover { background: var(--card-hover); }
+.todo-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+.todo-body { flex: 1; min-width: 0; }
+.todo-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+.todo-detail { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+.todo-action { font-size: 12px; color: var(--accent); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+.todo-action::before { content: '→ '; }
+.todo-empty { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 32px; text-align: center; color: var(--text-muted); font-size: 14px; }
+.todo-empty .big { font-size: 32px; display: block; margin-bottom: 8px; }
+
 /* ── Problem Radar ── */
 .problem-radar { margin-bottom: 24px; }
 .problem-radar .header-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
@@ -43,16 +63,11 @@ body {
 .problem-body { flex: 1; min-width: 0; }
 .problem-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
 .problem-detail { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
-.problem-action {
-  font-size: 12px; color: var(--accent); margin-top: 4px;
-  display: flex; align-items: center; gap: 4px;
-}
-.problem-action::before { content: '→'; }
-.problem-empty {
-  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
-  padding: 32px; text-align: center; color: var(--text-muted); font-size: 14px;
-}
+.problem-action { font-size: 12px; color: var(--accent); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+.problem-action::before { content: '→ '; }
+.problem-empty { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 32px; text-align: center; color: var(--text-muted); font-size: 14px; }
 .problem-empty .big { font-size: 32px; display: block; margin-bottom: 8px; }
+.trend-arrow { font-size: 13px; margin-left: 6px; display: inline-flex; align-items: center; }
 
 /* ── Cards ── */
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
@@ -69,9 +84,7 @@ body {
 /* ── Grids ── */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 24px; }
-.panel {
-  background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px;
-}
+.panel { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
 .panel h2 { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 14px; }
 .chart-container { position: relative; width: 100%; height: 240px; }
 .chart-container-sm { height: 200px; }
@@ -98,89 +111,86 @@ tr:hover td { background: var(--card-hover); }
 .loading { text-align: center; padding: 60px; color: var(--text-muted); font-size: 14px; }
 .error-state { text-align: center; padding: 40px; color: var(--red); }
 .dev-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.dev-btn {
-  padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); background: transparent;
-  color: var(--text-muted); font-size: 12px; cursor: pointer; transition: all 0.15s;
-}
+.dev-btn { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-size: 12px; cursor: pointer; transition: all 0.15s; }
 .dev-btn:hover { border-color: var(--accent); color: var(--text); }
 .dev-btn.active { border-color: var(--accent); background: rgba(108,123,255,0.1); color: var(--accent); }
 
 .summary-bar {
   background: linear-gradient(135deg, var(--card) 0%, #1e2240 100%);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 20px;
-  margin-bottom: 20px;
+  border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; margin-bottom: 20px;
 }
-.summary-inner {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
-}
+.summary-inner { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .summary-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s;
-  border: 1px solid transparent;
-  user-select: none;
+  display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px;
+  font-size: 13px; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; user-select: none;
 }
-.summary-item:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-.summary-item.critical {
-  background: rgba(248,113,113,0.12);
-  border-color: rgba(248,113,113,0.25);
-  color: var(--red);
-}
-.summary-item.critical:hover {
-  background: rgba(248,113,113,0.2);
-}
-.summary-item.warning {
-  background: rgba(251,191,36,0.12);
-  border-color: rgba(251,191,36,0.25);
-  color: var(--yellow);
-}
-.summary-item.warning:hover {
-  background: rgba(251,191,36,0.2);
-}
-.summary-item.info {
-  background: rgba(96,165,250,0.12);
-  border-color: rgba(96,165,250,0.25);
-  color: var(--blue);
-}
-.summary-item.info:hover {
-  background: rgba(96,165,250,0.2);
-}
-.summary-item.good {
-  background: rgba(52,211,153,0.12);
-  border-color: rgba(52,211,153,0.25);
-  color: var(--green);
-}
-.summary-item .num {
-  font-size: 18px;
-  font-weight: 700;
-}
-.summary-item .label {
-  font-size: 12px;
-}
-.summary-sep {
-  width: 1px;
-  height: 24px;
-  background: var(--border);
-  margin: 0 4px;
-}
+.summary-item:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+.summary-item.critical { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.25); color: var(--red); }
+.summary-item.critical:hover { background: rgba(248,113,113,0.2); }
+.summary-item.warning { background: rgba(251,191,36,0.12); border-color: rgba(251,191,36,0.25); color: var(--yellow); }
+.summary-item.warning:hover { background: rgba(251,191,36,0.2); }
+.summary-item.info { background: rgba(96,165,250,0.12); border-color: rgba(96,165,250,0.25); color: var(--blue); }
+.summary-item.info:hover { background: rgba(96,165,250,0.2); }
+.summary-item.good { background: rgba(52,211,153,0.12); border-color: rgba(52,211,153,0.25); color: var(--green); }
+.summary-item .num { font-size: 18px; font-weight: 700; }
+.summary-item .label { font-size: 12px; }
+.summary-sep { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
 @media (max-width: 600px) {
   .summary-item { padding: 4px 10px; font-size: 12px; }
   .summary-item .num { font-size: 15px; }
 }
 
+/* Radar selector */
+.radar-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.radar-btn { padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-size: 11px; cursor: pointer; transition: all 0.15s; }
+.radar-btn:hover { border-color: var(--accent); color: var(--text); }
+.radar-btn.active { border-color: var(--accent); background: rgba(108,123,255,0.1); color: var(--accent); }
+
+/* ── Learning plan inline panel ── */
+.learning-plan { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 16px; }
+.learning-generator { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.learning-generator label { font-size: 12px; color: var(--text-muted); }
+.learning-generator input { width: 56px; padding: 5px 8px; border-radius: 5px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 12px; font-family: inherit; text-align: center; }
+.learning-generator button { padding: 6px 14px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: #fff; font-size: 12px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; }
+.learning-generator button:hover { opacity: 0.85; }
+.learning-generator button:disabled { opacity: 0.4; cursor: not-allowed; }
+.learning-generator .status { font-size: 11px; color: var(--text-muted); }
+.learning-generator .status.error { color: var(--red); }
+.learning-weakness { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 18px; margin-bottom: 10px; }
+.learning-weakness-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.learning-weakness-rank { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.learning-weakness-rank.urgent { background: rgba(248,113,113,0.15); color: var(--red); }
+.learning-weakness-rank.longterm { background: rgba(96,165,250,0.15); color: var(--blue); }
+.learning-weakness-type { font-size: 14px; font-weight: 600; }
+.learning-weakness-stats { display: flex; gap: 6px; margin-left: auto; }
+.learning-stat { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+.learning-root-cause { background: rgba(108,123,255,0.06); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; line-height: 1.6; }
+.learning-sub-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; margin: 10px 0 6px; }
+.learning-resource { display: flex; align-items: flex-start; gap: 8px; padding: 6px 10px; border-radius: 5px; font-size: 12px; }
+.learning-resource .star { color: var(--yellow); flex-shrink: 0; }
+.learning-resource .tag { font-size: 10px; padding: 1px 5px; border-radius: 3px; background: rgba(108,123,255,0.1); color: var(--accent); white-space: nowrap; margin-left: 6px; }
+.learning-action { padding: 4px 0; font-size: 12px; line-height: 1.6; }
+.learning-quiz { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px; overflow: hidden; }
+.learning-quiz-q { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; cursor: pointer; user-select: none; font-size: 12px; line-height: 1.5; }
+.learning-quiz-q:hover { background: rgba(255,255,255,0.02); }
+.learning-quiz-num { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; background: rgba(108,123,255,0.1); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
+.learning-quiz-type { font-size: 10px; padding: 1px 6px; border-radius: 3px; flex-shrink: 0; background: rgba(52,211,153,0.1); color: var(--green); }
+.learning-quiz-arrow { color: var(--text-muted); font-size: 11px; flex-shrink: 0; transition: transform 0.2s; }
+.learning-quiz-arrow.open { transform: rotate(180deg); }
+.learning-quiz-a { display: none; padding: 0 12px 12px 44px; font-size: 12px; border-top: 1px solid var(--border); padding-top: 8px; }
+.learning-quiz-a.visible { display: block; }
+.learning-quiz-a h5 { font-size: 11px; color: var(--green); margin-bottom: 4px; font-weight: 600; }
+.learning-quiz-a li { padding: 2px 0; color: var(--text-muted); font-size: 12px; line-height: 1.5; list-style: none; }
+.learning-quiz-a li::before { content: '• '; color: var(--accent); }
+.learning-goal { background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.2); border-radius: 6px; padding: 8px 12px; font-size: 12px; color: var(--green); display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.learning-collab { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.learning-collab-item { padding: 6px 10px; background: var(--card); border: 1px solid var(--border); border-radius: 5px; font-size: 12px; display: flex; align-items: flex-start; gap: 8px; }
+.learning-collab-item .icon { flex-shrink: 0; }
+.learning-next { background: linear-gradient(135deg, var(--card) 0%, #1e2240 100%); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; }
+.learning-next h4 { font-size: 13px; margin-bottom: 6px; color: var(--accent); }
+.learning-next ol { padding-left: 18px; }
+.learning-next li { font-size: 12px; padding: 2px 0; color: var(--text-muted); line-height: 1.6; }
+.learning-error-banner { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); border-radius: 6px; padding: 8px 14px; margin-bottom: 12px; font-size: 12px; color: var(--red); }
 </style>
 </head>
 <body>
@@ -191,194 +201,265 @@ tr:hover td { background: var(--card-hover); }
 <script>
 const API = "";
 const DEMO_MODE = window.location.pathname === "/demo";
-
-function api(path) {
-  const sep = path.includes('?') ? '&' : '?';
-  return DEMO_MODE ? path + sep + 'demo=true' : path;
-}
+function api(path) { const sep = path.includes('?') ? '&' : '?'; return DEMO_MODE ? path + sep + 'demo=true' : path; }
 const COLORS = { accent: '#6c7bff', green: '#34d399', yellow: '#fbbf24', red: '#f87171', blue: '#60a5fa', orange: '#fb923c' };
 const DEV_COLORS = ['#6c7bff','#34d399','#fbbf24','#f87171','#60a5fa','#a78bfa','#f472b6'];
+const LABEL_MAP = { transaction: '事务', multithread: '多线程', logging: '日志', api: 'API', sql: 'SQL', security: '安全' };
 let charts = {};
 
 async function get(url) { const r = await fetch(url); if (!r.ok) throw new Error(await r.text()); return r.json(); }
 
 function render(dateStr) {
-  document.getElementById('app').innerHTML = `
-    <div class="header">
-      <h1>📊 <span>人效</span>看板</h1>
-      <div class="header-right">
-        <span class="last-update">最后更新: ${dateStr}</span>
-      </div>
-    </div>
-    <div class="summary-bar" id="summary-bar">
-      <div class="summary-inner" id="summary-inner"></div>
-    </div>
-    <div class="problem-radar" id="problem-radar"></div>
-    <div class="panel" style="margin-bottom:24px" id="requirements-panel">
-      <h2>需求进度</h2>
-      <div id="requirements-content"></div>
-    </div>
-    <div class="cards" id="overview-cards"></div>
-    <div class="grid-2">
-      <div class="panel" id="dev-leaderboard-panel"><h2>开发者雷达</h2><div id="dev-leaderboard" class="chart-container chart-container-sm"></div></div>
-      <div class="panel"><h2>问题类型分布</h2><div id="issue-pie" class="chart-container chart-container-sm"></div></div>
-    </div>
-    <div class="grid-3">
-      <div class="panel"><h2>交付周期趋势</h2><div id="trend-delivery" class="chart-container"></div></div>
-      <div class="panel"><h2>缺陷率趋势</h2><div id="trend-defect" class="chart-container"></div></div>
-      <div class="panel"><h2>CR 吞吐量</h2><div id="trend-throughput" class="chart-container"></div></div>
-    </div>
-    <div class="grid-2">
-      <div class="panel"><h2>CR 周转时间</h2><div id="trend-turnaround" class="chart-container chart-container-sm"></div></div>
-      <div class="panel"><h2>评审通过率</h2><div id="review-stats" class="chart-container chart-container-sm"></div></div>
-    </div>
-    <div class="panel" style="margin-bottom:24px">
-      <h2>开发者详情</h2>
-      <div class="dev-selector" id="dev-selector"></div>
-      <div class="table-wrap" id="dev-detail-table"></div>
-    </div>
-  `;
+  document.getElementById('app').innerHTML = [
+    '<div class="header">',
+    '  <h1>📊 <span>人效</span>看板</h1>',
+    '  <div class="header-right"><span class="last-update">最后更新: ' + dateStr + '</span></div>',
+    '</div>',
+    '<div class="summary-bar" id="summary-bar"><div class="summary-inner" id="summary-inner"></div></div>',
+    '<div class="todo-panel" id="todo-panel"></div>',
+    '<div class="problem-radar" id="problem-radar"></div>',
+    '<div class="panel" style="margin-bottom:24px" id="requirements-panel"><h2>需求进度</h2><div id="requirements-content"></div></div>',
+    '<div class="cards" id="overview-cards"></div>',
+    '<div class="grid-2">',
+    '  <div class="panel" id="dev-leaderboard-panel"><h2>开发者雷达</h2><div class="radar-selector" id="radar-selector"></div><div id="dev-leaderboard" class="chart-container chart-container-sm"></div></div>',
+    '  <div class="panel"><h2>问题类型分布</h2><div id="issue-pie" class="chart-container chart-container-sm"></div></div>',
+    '</div>',
+    '<div class="grid-3">',
+    '  <div class="panel"><h2>交付周期趋势</h2><div id="trend-delivery" class="chart-container"></div></div>',
+    '  <div class="panel"><h2>缺陷率趋势</h2><div id="trend-defect" class="chart-container"></div></div>',
+    '  <div class="panel"><h2>CR 吞吐量</h2><div id="trend-throughput" class="chart-container"></div></div>',
+    '</div>',
+    '<div class="grid-2">',
+    '  <div class="panel"><h2>CR 周转时间</h2><div id="trend-turnaround" class="chart-container chart-container-sm"></div></div>',
+    '  <div class="panel"><h2>评审通过率</h2><div id="review-stats" class="chart-container chart-container-sm"></div></div>',
+    '</div>',
+    '<div class="panel" style="margin-bottom:24px">',
+    '  <h2>开发者详情</h2>',
+    '  <div class="dev-selector" id="dev-selector"></div>',
+    '  <div class="table-wrap" id="dev-detail-table"></div>',
+    '</div>',
+  ].join('');
 }
 
 async function load() {
   try {
-    const [overview, developers, trendsData, reviewStats, teamComp, problemsData, radarData, requirements] = await Promise.all([
-      get(api('/api/overview')),
-      get(api('/api/developers')),
-      get(api('/api/trends')),
-      get(api('/api/review-stats')),
-      get(api('/api/team-composition')),
-      get(api('/api/problems')),
-      get(api('/api/developer-radar')),
-      get(api('/api/requirements')),
+    const [overview, developers, trendsData, reviewStats, teamComp, problemsData, radarData, requirements, todoData, issueBreakdown] = await Promise.all([
+      get(api('/api/overview')), get(api('/api/developers')), get(api('/api/trends')),
+      get(api('/api/review-stats')), get(api('/api/team-composition')),
+      get(api('/api/problems')), get(api('/api/developer-radar')),
+      get(api('/api/requirements')), get(api('/api/todo')), get(api('/api/issue-breakdown')),
     ]);
 
     const tierCounts = {};
-    teamComp.forEach(d => { const t = d.tier || (d.blocker_count > 5 ? '较差' : d.blocker_count > 2 ? '普通' : '优秀'); tierCounts[t] = (tierCounts[t] || 0) + 1; });
+    teamComp.forEach(d => {
+      const t = d.tier || (d.blocker_count > 5 ? '较差' : d.blocker_count > 2 ? '普通' : '优秀');
+      tierCounts[t] = (tierCounts[t] || 0) + 1;
+    });
     const now = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
     render(now);
 
+    renderTodo(todoData);
     renderProblemRadar(problemsData);
     renderOverview(overview, tierCounts);
     renderDevRadar(radarData);
-    renderSummary(problemsData, requirements, teamComp, radarData);
+    renderSummary(problemsData, requirements, teamComp, radarData, todoData);
     renderRequirements(requirements);
-    renderIssuePie(developers);
+    renderIssueStacked(issueBreakdown);
     renderTrends(trendsData);
     renderReviewStats(reviewStats);
     renderDevSelector(developers, teamComp);
   } catch (e) {
-    document.getElementById('app').innerHTML = `<div class="error-state">❌ 加载失败: ${e.message}</div>`;
+    document.getElementById('app').innerHTML = '<div class="error-state">❌ 加载失败: ' + e.message + '</div>';
     console.error(e);
   }
 }
 
-/* ── Problem Radar ── */
-function renderProblemRadar(data) {
-  const el = document.getElementById('problem-radar');
-  const problems = data.problems || [];
+/* ── Todo Panel ── */
+function renderTodo(data) {
+  const el = document.getElementById('todo-panel');
+  const items = data.items || [];
+  const headerHTML = [
+    '<div class="header-row">',
+    '  <h2>📋 今日待办</h2>',
+    '  <div class="badge-group">',
+    '    <span class="radar-badge critical">' + items.filter(i => i.severity === 'critical').length + ' 紧急</span>',
+    '    <span class="radar-badge warning">' + items.filter(i => i.severity === 'warning').length + ' 待处理</span>',
+    '  </div>',
+    '</div>',
+  ].join('');
 
-  const severityIcon = { critical: '🔴', warning: '🟡', info: '🔵' };
-  const typeLabels = {
-    blocker_overload: '人员负荷',
-    efficiency_anomaly: '交付效率',
-    quality_anomaly: '代码质量',
-    cr_slowdown: 'CR 节奏',
-    slow_review: 'CR 响应',
-    hot_issue_type: '高频缺陷',
-  };
-
-  const headerHTML = `
-    <div class="header-row">
-      <h2>🚨 问题雷达</h2>
-      <div class="badge-group">
-        <span class="radar-badge critical">${data.critical_count} 紧急</span>
-        <span class="radar-badge warning">${data.warning_count} 警告</span>
-        <span class="radar-badge info">${data.info_count} 提示</span>
-      </div>
-    </div>
-  `;
-
-  if (problems.length === 0) {
-    el.innerHTML = headerHTML + `<div class="problem-empty"><span class="big">✅</span>当前无异常，团队状态良好</div>`;
+  if (items.length === 0 || (items.length === 1 && items[0].severity === 'good')) {
+    el.innerHTML = headerHTML + '<div class="todo-empty"><span class="big">✅</span>暂无待办事项，团队状态良好</div>';
     return;
   }
 
-  const itemsHTML = problems.map(p => `
-    <div class="problem-item">
-      <div class="problem-icon">${severityIcon[p.severity] || '⚪'}</div>
-      <div class="problem-body">
-        <div class="problem-title" style="color:${p.severity === 'critical' ? 'var(--red)' : p.severity === 'warning' ? 'var(--yellow)' : 'var(--blue)'}">
-          ${p.title}
-          <span style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:8px">${typeLabels[p.type] || p.type}</span>
-          ${p.type === 'blocker_overload' ? '<span class="badge badge-red" style="margin-left:6px">较差</span>' : ''}
-        </div>
-        <div class="problem-detail">${p.detail}</div>
-        <div class="problem-action">${p.action}</div>
-      </div>
-    </div>
-  `).join('');
+  const itemsHTML = items.map(function(item) {
+    var color = item.severity === 'critical' ? 'var(--red)' : item.severity === 'warning' ? 'var(--yellow)' : 'var(--text)';
+    var click = item.scroll ? ' onclick="scrollTo(\'' + item.scroll + '\')"' : '';
+    var actionHtml = item.action ? '<div class="todo-action">' + item.action + '</div>' : '';
+    return [
+      '<div class="todo-item"' + click + '>',
+      '  <div class="todo-icon">' + item.icon + '</div>',
+      '  <div class="todo-body">',
+      '    <div class="todo-title" style="color:' + color + '">' + item.title + '</div>',
+      '    <div class="todo-detail">' + item.detail + '</div>',
+      actionHtml,
+      '  </div>',
+      '</div>',
+    ].join('');
+  }).join('');
 
-  el.innerHTML = headerHTML + `<div class="problem-list">${itemsHTML}</div>`;
+  el.innerHTML = headerHTML + '<div class="todo-list">' + itemsHTML + '</div>';
+}
+
+/* ── Problem Radar ── */
+function renderProblemRadar(data) {
+  var el = document.getElementById('problem-radar');
+  var problems = data.problems || [];
+  var severityIcon = { critical: '🔴', warning: '🟡', info: '🔵' };
+  var typeLabels = {
+    blocker_overload: '人员负荷', efficiency_anomaly: '交付效率', quality_anomaly: '代码质量',
+    cr_slowdown: 'CR 节奏', slow_review: 'CR 响应', hot_issue_type: '高频缺陷',
+  };
+  var trendIcons = {
+    up: '<span class="trend-arrow" style="color:var(--red)">↑ 恶化</span>',
+    down: '<span class="trend-arrow" style="color:var(--green)">↓ 改善</span>',
+    stable: '<span class="trend-arrow" style="color:var(--text-muted)">→ 持平</span>',
+  };
+
+  var headerHTML = [
+    '<div class="header-row">',
+    '  <h2>🚨 问题雷达</h2>',
+    '  <div class="badge-group">',
+    '    <span class="radar-badge critical">' + data.critical_count + ' 紧急</span>',
+    '    <span class="radar-badge warning">' + data.warning_count + ' 警告</span>',
+    '    <span class="radar-badge info">' + data.info_count + ' 提示</span>',
+    '  </div>',
+    '</div>',
+  ].join('');
+
+  if (problems.length === 0) {
+    el.innerHTML = headerHTML + '<div class="problem-empty"><span class="big">✅</span>当前无异常，团队状态良好</div>';
+    return;
+  }
+
+  var itemsHTML = problems.map(function(p) {
+    var icon = severityIcon[p.severity] || '⚪';
+    var color = p.severity === 'critical' ? 'var(--red)' : p.severity === 'warning' ? 'var(--yellow)' : 'var(--blue)';
+    var trend = trendIcons[p.trend] || '';
+    var typeLabel = typeLabels[p.type] || p.type;
+    return [
+      '<div class="problem-item">',
+      '  <div class="problem-icon">' + icon + '</div>',
+      '  <div class="problem-body">',
+      '    <div class="problem-title" style="color:' + color + '">' + p.title + trend + '<span style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:8px">' + typeLabel + '</span></div>',
+      '    <div class="problem-detail">' + p.detail + '</div>',
+      '    <div class="problem-action">' + p.action + '</div>',
+      '  </div>',
+      '</div>',
+    ].join('');
+  }).join('');
+
+  el.innerHTML = headerHTML + '<div class="problem-list">' + itemsHTML + '</div>';
 }
 
 function renderOverview(data, tierCounts) {
-  const cards = document.getElementById('overview-cards');
-  const tiers = tierCounts || {};
-  const tierHTML = ['优秀','普通','较差'].filter(t => tiers[t]).map(t => {
-    const cls = t === '优秀' ? 'green' : t === '普通' ? 'yellow' : 'red';
-    return `<span style="color:var(--${cls});font-weight:600">${tiers[t]}${t}</span>`;
+  var cards = document.getElementById('overview-cards');
+  var tiers = tierCounts || {};
+  var tierHTML = ['优秀','普通','较差'].filter(function(t) { return tiers[t]; }).map(function(t) {
+    var cls = t === '优秀' ? 'green' : t === '普通' ? 'yellow' : 'red';
+    return '<span style="color:var(--' + cls + ');font-weight:600">' + tiers[t] + t + '</span>';
   }).join(' / ');
-  const tierCard = data.developers > 0 ? `
-    <div class="card"><div class="label">员工分级</div><div class="value" style="font-size:20px">${tierHTML}</div><div class="sub">优秀 / 普通 / 较差</div></div>` : '';
-  cards.innerHTML = `
-    <div class="card"><div class="label">开发者</div><div class="value blue">${data.developers}</div><div class="sub">活跃人数</div></div>
-    <div class="card"><div class="label">需求/方案</div><div class="value accent">${data.stories}</div><div class="sub">进行中</div></div>
-    <div class="card"><div class="label">待审 MR</div><div class="value accent">${data.mrs}</div><div class="sub">待处理</div></div>
-    <div class="card"><div class="label">30天问题</div><div class="value ${data.blockers_30d > 5 ? 'red' : 'yellow'}">${data.issues_30d}</div><div class="sub">Blocker: ${data.blockers_30d}</div></div>
-    <div class="card"><div class="label">评审通过率</div><div class="value ${data.pass_rate >= 70 ? 'green' : data.pass_rate >= 50 ? 'yellow' : 'red'}">${data.pass_rate}%</div><div class="sub">近30天</div></div>
-    ${tierCard}
-  `;
+  var tierCard = data.developers > 0 ? '<div class="card"><div class="label">员工分级</div><div class="value" style="font-size:20px">' + tierHTML + '</div><div class="sub">优秀 / 普通 / 较差</div></div>' : '';
+  cards.innerHTML = [
+    '<div class="card"><div class="label">开发者</div><div class="value blue">' + data.developers + '</div><div class="sub">活跃人数</div></div>',
+    '<div class="card"><div class="label">需求/方案</div><div class="value accent">' + data.stories + '</div><div class="sub">进行中</div></div>',
+    '<div class="card"><div class="label">待审 MR</div><div class="value accent">' + data.mrs + '</div><div class="sub">待处理</div></div>',
+    '<div class="card"><div class="label">30天问题</div><div class="value ' + (data.blockers_30d > 5 ? 'red' : 'yellow') + '">' + data.issues_30d + '</div><div class="sub">Blocker: ' + data.blockers_30d + '</div></div>',
+    '<div class="card"><div class="label">评审通过率</div><div class="value ' + (data.pass_rate >= 70 ? 'green' : data.pass_rate >= 50 ? 'yellow' : 'red') + '">' + data.pass_rate + '%</div><div class="sub">近30天</div></div>',
+    tierCard,
+  ].join('');
 }
 
+/* ── Developer Radar (single-select + team avg) ── */
+var _radarData = [];
 function renderDevRadar(radarData) {
-  const el = document.getElementById('dev-leaderboard');
-  const ctx = document.createElement('canvas');
-  el.innerHTML = ''; el.appendChild(ctx);
+  _radarData = radarData;
+  var el = document.getElementById('dev-leaderboard');
+  var ctx = document.createElement('canvas');
+  el.innerHTML = '';
+  el.appendChild(ctx);
 
-  const labels = ['技术方案评审','代码质量','缺陷控制','交付效率','CR响应'];
+  var selector = document.getElementById('radar-selector');
+  var names = radarData.map(function(d) { return d.developer; });
+  selector.innerHTML = names.map(function(n, i) {
+    return '<button class="radar-btn ' + (i === 0 ? 'active' : '') + '" data-dev="' + n + '">' + n + '</button>';
+  }).join('') + '<button class="radar-btn" data-dev="__all__">全部对比</button>';
 
-  // Build dataset per developer
-  const datasets = radarData.map((dev, i) => ({
-    label: dev.developer,
-    data: ['技术方案评审','代码质量','缺陷控制','交付效率','CR响应'].map(d => dev.dimensions[d]),
-    borderColor: DEV_COLORS[i % DEV_COLORS.length],
-    backgroundColor: DEV_COLORS[i % DEV_COLORS.length] + '30',
-    borderWidth: 2,
-    pointRadius: 2,
-  }));
+  _drawRadar(ctx, radarData, names[0]);
+
+  selector.addEventListener('click', function(e) {
+    var btn = e.target.closest('.radar-btn');
+    if (!btn) return;
+    selector.querySelectorAll('.radar-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    _drawRadar(ctx, radarData, btn.dataset.dev);
+  });
+}
+
+function _drawRadar(ctx, radarData, selected) {
+  var labels = ['技术方案评审','代码质量','缺陷控制','交付效率','CR响应'];
+  var datasets = [];
+
+  if (selected === '__all__') {
+    radarData.forEach(function(dev, i) {
+      datasets.push({
+        label: dev.developer,
+        data: labels.map(function(d) { return dev.dimensions[d]; }),
+        borderColor: DEV_COLORS[i % DEV_COLORS.length],
+        backgroundColor: DEV_COLORS[i % DEV_COLORS.length] + '30',
+        borderWidth: 2, pointRadius: 2,
+      });
+    });
+  } else {
+    var dev = radarData.find(function(d) { return d.developer === selected; });
+    if (!dev) return;
+
+    datasets.push({
+      label: selected,
+      data: labels.map(function(d) { return dev.dimensions[d]; }),
+      borderColor: COLORS.accent,
+      backgroundColor: COLORS.accent + '30',
+      borderWidth: 3, pointRadius: 3,
+    });
+
+    // Team average (dashed line)
+    var avgData = labels.map(function(lbl) {
+      var vals = radarData.map(function(d) { return d.dimensions[lbl]; }).filter(function(v) { return v != null; });
+      return vals.reduce(function(s, v) { return s + v; }, 0) / vals.length;
+    });
+    datasets.push({
+      label: '团队均值',
+      data: avgData,
+      borderColor: '#8b8fa8',
+      backgroundColor: 'rgba(139,143,168,0.1)',
+      borderWidth: 2, borderDash: [5, 5], pointRadius: 2,
+    });
+  }
 
   if (charts.devLeader) charts.devLeader.destroy();
   charts.devLeader = new Chart(ctx, {
     type: 'radar',
-    data: { labels, datasets },
+    data: { labels: labels, datasets: datasets },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { position: 'top', labels: { color: '#8b8fa8', boxWidth: 12, padding: 8, font: { size: 11 } } },
-        tooltip: {
-          callbacks: {
-            label: function(ctx) {
-              return ctx.dataset.label + ': ' + ctx.parsed.r + '分';
-            }
-          }
-        }
+        tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + ctx.parsed.r + '分'; } } }
       },
       scales: {
         r: {
-          min: 0,
-          max: 100,
+          min: 0, max: 100,
           ticks: { stepSize: 20, color: '#8b8fa8', backdropColor: 'transparent', font: { size: 10 } },
           grid: { color: 'rgba(255,255,255,0.08)' },
           angleLines: { color: 'rgba(255,255,255,0.08)' },
@@ -387,33 +468,55 @@ function renderDevRadar(radarData) {
       },
     }
   });
-}function renderIssuePie(developers) {
-  const el = document.getElementById('issue-pie');
-  const ctx = document.createElement('canvas');
-  el.innerHTML = ''; el.appendChild(ctx);
+}
 
-  const labelMap = { transaction: '事务', multithread: '多线程', logging: '日志', api: 'API', sql: 'SQL', security: '安全' };
-  const counts = {};
-  developers.forEach(dev => {
-    const top = (() => { try { return JSON.parse(dev.top_issue_types); } catch { return []; } })();
-    top.forEach(t => { counts[t.type] = (counts[t.type] || 0) + t.count; });
+/* ── Issue Type Stacked Bar ── */
+function renderIssueStacked(breakdown) {
+  var el = document.getElementById('issue-pie');
+  var ctx = document.createElement('canvas');
+  el.innerHTML = '';
+  el.appendChild(ctx);
+
+  var types = Object.keys(breakdown);
+  if (types.length === 0) {
+    el.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-muted)">暂无数据</div>';
+    return;
+  }
+
+  types.sort(function(a, b) {
+    var ta = breakdown[a].blocker + breakdown[a].warning + breakdown[a].info;
+    var tb = breakdown[b].blocker + breakdown[b].warning + breakdown[b].info;
+    return tb - ta;
   });
-  const types = Object.keys(counts);
-  if (types.length === 0) { el.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-muted)">暂无数据</div>'; return; }
 
   new Chart(ctx, {
-    type: 'doughnut',
+    type: 'bar',
     data: {
-      labels: types.map(t => labelMap[t] || t),
-      datasets: [{
-        data: types.map(t => counts[t]),
-        backgroundColor: DEV_COLORS, borderWidth: 0,
-      }]
+      labels: types.map(function(t) { return LABEL_MAP[t] || t; }),
+      datasets: [
+        { label: 'Blocker', data: types.map(function(t) { return breakdown[t].blocker; }), backgroundColor: COLORS.red, borderRadius: 2 },
+        { label: 'Warning', data: types.map(function(t) { return breakdown[t].warning; }), backgroundColor: COLORS.yellow, borderRadius: 2 },
+        { label: 'Info', data: types.map(function(t) { return breakdown[t].info; }), backgroundColor: COLORS.blue, borderRadius: 2 },
+      ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'right', labels: { color: '#8b8fa8', padding: 8, font: { size: 11 } } }
+        legend: { position: 'top', labels: { color: '#8b8fa8', padding: 8, font: { size: 11 } } },
+        tooltip: {
+          mode: 'index',
+          callbacks: {
+            footer: function(items) {
+              var total = 0;
+              items.forEach(function(i) { total += i.parsed.y; });
+              return '合计: ' + total + ' 个';
+            }
+          }
+        }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { color: '#e2e4f0' } },
+        y: { stacked: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b8fa8' }, beginAtZero: true }
       }
     }
   });
@@ -423,8 +526,10 @@ function renderTrends(data) {
   renderLineChart('trend-delivery', '交付周期（天）', data.avg_delivery_days, DEV_COLORS);
   renderLineChart('trend-defect', '缺陷率（分/天）', data.defect_rate, DEV_COLORS);
 
-  const el3 = document.getElementById('trend-throughput');
-  const ctx3 = document.createElement('canvas'); el3.innerHTML = ''; el3.appendChild(ctx3);
+  var el3 = document.getElementById('trend-throughput');
+  var ctx3 = document.createElement('canvas');
+  el3.innerHTML = '';
+  el3.appendChild(ctx3);
   if (charts.tp) charts.tp.destroy();
   charts.tp = new Chart(ctx3, {
     type: 'line',
@@ -435,8 +540,10 @@ function renderTrends(data) {
     options: lineOpts('每日 CR 完成数')
   });
 
-  const el4 = document.getElementById('trend-turnaround');
-  const ctx4 = document.createElement('canvas'); el4.innerHTML = ''; el4.appendChild(ctx4);
+  var el4 = document.getElementById('trend-turnaround');
+  var ctx4 = document.createElement('canvas');
+  el4.innerHTML = '';
+  el4.appendChild(ctx4);
   if (charts.ta) charts.ta.destroy();
   charts.ta = new Chart(ctx4, {
     type: 'line',
@@ -449,19 +556,27 @@ function renderTrends(data) {
 }
 
 function renderLineChart(elId, label, groups, colors) {
-  const el = document.getElementById(elId);
-  const ctx = document.createElement('canvas'); el.innerHTML = ''; el.appendChild(ctx);
+  var el = document.getElementById(elId);
+  var ctx = document.createElement('canvas');
+  el.innerHTML = '';
+  el.appendChild(ctx);
   if (charts[elId]) charts[elId].destroy();
+
+  var entries = Object.entries(groups);
+  var firstVals = entries[0] ? entries[0][1] : null;
   charts[elId] = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: Object.values(groups)[0]?.dates || [],
-      datasets: Object.entries(groups).map(([dev, d], i) => ({
-        label: dev, data: d.values,
-        borderColor: colors[i % colors.length],
-        backgroundColor: colors[i % colors.length] + '20',
-        fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2,
-      }))
+      labels: firstVals ? firstVals.dates : [],
+      datasets: entries.map(function(kv, i) {
+        var dev = kv[0], d = kv[1];
+        return {
+          label: dev, data: d.values,
+          borderColor: colors[i % colors.length],
+          backgroundColor: colors[i % colors.length] + '20',
+          fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2,
+        };
+      })
     },
     options: lineOpts(label)
   });
@@ -480,12 +595,14 @@ function lineOpts(unit) {
 }
 
 function renderReviewStats(data) {
-  const el = document.getElementById('review-stats');
-  const ctx = document.createElement('canvas'); el.innerHTML = ''; el.appendChild(ctx);
-  const codePass = data.filter(d => d.review_type === 'code_review' && d.result === 'pass').reduce((s, d) => s + d.count, 0);
-  const codeFail = data.filter(d => d.review_type === 'code_review' && d.result === 'fail').reduce((s, d) => s + d.count, 0);
-  const dsPass = data.filter(d => d.review_type === 'design_review' && d.result === 'pass').reduce((s, d) => s + d.count, 0);
-  const dsFail = data.filter(d => d.review_type === 'design_review' && d.result === 'fail').reduce((s, d) => s + d.count, 0);
+  var el = document.getElementById('review-stats');
+  var ctx = document.createElement('canvas');
+  el.innerHTML = '';
+  el.appendChild(ctx);
+  var codePass = data.filter(function(d) { return d.review_type === 'code_review' && d.result === 'pass'; }).reduce(function(s, d) { return s + d.count; }, 0);
+  var codeFail = data.filter(function(d) { return d.review_type === 'code_review' && d.result === 'fail'; }).reduce(function(s, d) { return s + d.count; }, 0);
+  var dsPass = data.filter(function(d) { return d.review_type === 'design_review' && d.result === 'pass'; }).reduce(function(s, d) { return s + d.count; }, 0);
+  var dsFail = data.filter(function(d) { return d.review_type === 'design_review' && d.result === 'fail'; }).reduce(function(s, d) { return s + d.count; }, 0);
 
   new Chart(ctx, {
     type: 'bar',
@@ -508,231 +625,346 @@ function renderReviewStats(data) {
 }
 
 async function renderDevSelector(developers, teamComp) {
-  const selector = document.getElementById('dev-selector');
-  const names = developers.map(d => d.developer_name);
-  selector.innerHTML = names.map((n, i) =>
-    `<button class="dev-btn ${i === 0 ? 'active' : ''}" data-dev="${n}">${n}</button>`
-  ).join('') + `<button class="dev-btn" data-dev="__all__">📋 全部</button>`;
+  var selector = document.getElementById('dev-selector');
+  var names = developers.map(function(d) { return d.developer_name; });
+  selector.innerHTML = names.map(function(n, i) {
+    return '<button class="dev-btn ' + (i === 0 ? 'active' : '') + '" data-dev="' + n + '">' + n + '</button>';
+  }).join('') + '<button class="dev-btn" data-dev="__all__">📋 全部</button>';
 
   renderDevDetailTable(developers, teamComp);
 
-  selector.addEventListener('click', async e => {
-    const btn = e.target.closest('.dev-btn');
+  selector.addEventListener('click', async function(e) {
+    var btn = e.target.closest('.dev-btn');
     if (!btn) return;
-    selector.querySelectorAll('.dev-btn').forEach(b => b.classList.remove('active'));
+    selector.querySelectorAll('.dev-btn').forEach(function(b) { b.classList.remove('active'); });
     btn.classList.add('active');
-    const dev = btn.dataset.dev;
+    var dev = btn.dataset.dev;
     if (dev === '__all__') {
       renderDevDetailTable(developers, teamComp);
     } else {
       try {
-        const detail = await get(api(`/api/developers/${encodeURIComponent(dev)}?days=30`));
+        var detail = await get(api('/api/developers/' + encodeURIComponent(dev) + '?days=30'));
         renderDevDetail(detail, dev);
       } catch (e) {
-        document.getElementById('dev-detail-table').innerHTML = `<div class="error-state">加载失败: ${e.message}</div>`;
+        document.getElementById('dev-detail-table').innerHTML = '<div class="error-state">加载失败: ' + e.message + '</div>';
       }
     }
   });
 }
 
 function renderDevDetailTable(developers, teamComp) {
-  const el = document.getElementById('dev-detail-table');
-  const maxVal = Math.max(...teamComp.map(d => d.total_issues), 1);
-  const topTypesHTML = (dev) => {
+  var el = document.getElementById('dev-detail-table');
+  var maxVal = Math.max.apply(null, teamComp.map(function(d) { return d.total_issues; })) || 1;
+  function topTypesHTML(dev) {
     try {
-      const types = JSON.parse(dev.top_issue_types || '[]');
-      return types.slice(0, 3).map(t => `<span class="badge badge-yellow">${t.type}(${t.count})</span>`).join(' ');
-    } catch { return '-'; }
-  };
+      var types = JSON.parse(dev.top_issue_types || '[]');
+      return types.slice(0, 3).map(function(t) { return '<span class="badge badge-yellow">' + t.type + '(' + t.count + ')</span>'; }).join(' ');
+    } catch(e) { return '-'; }
+  }
 
-  el.innerHTML = `
-    <table>
-      <thead><tr><th>开发者</th><th>总问题</th><th>Blocker</th><th>Warning</th><th>高频类型</th><th>问题分布</th><th>最后更新</th></tr></thead>
-      <tbody>
-        ${teamComp.map(dev => {
-          const profile = developers.find(d => d.developer_name === dev.developer_name) || {};
-          const pct = Math.round(dev.total_issues / maxVal * 100);
-          const tier = dev.tier || (dev.blocker_count > 5 ? '较差' : dev.blocker_count > 2 ? '普通' : '优秀');
-          const tierBadge = tier === '优秀' ? 'badge-green' : tier === '普通' ? 'badge-yellow' : 'badge-red';
-          const barColor = tier === '优秀' ? 'bar-green' : tier === '普通' ? 'bar-yellow' : 'bar-red';
-          return `<tr>
-            <td><strong>${dev.developer_name}</strong> <span class="badge ${tierBadge}">${tier}</span></td>
-            <td>${dev.total_issues}</td>
-            <td><span class="badge ${dev.blocker_count > 0 ? 'badge-red' : 'badge-green'}">${dev.blocker_count}</span></td>
-            <td><span class="badge badge-yellow">${dev.warning_count}</span></td>
-            <td>${topTypesHTML(profile)}</td>
-            <td><div class="bar-group"><div class="bar ${barColor}" style="width:${pct}%"></div><span style="font-size:11px;color:var(--text-muted)">${pct}%</span></div></td>
-            <td style="font-size:11px;color:var(--text-muted)">${profile.last_updated || '-'}</td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
-  `;
+  var rows = teamComp.map(function(dev) {
+    var profile = developers.find(function(d) { return d.developer_name === dev.developer_name; }) || {};
+    var pct = Math.round(dev.total_issues / maxVal * 100);
+    var tier = dev.tier || (dev.blocker_count > 5 ? '较差' : dev.blocker_count > 2 ? '普通' : '优秀');
+    var tierBadge = tier === '优秀' ? 'badge-green' : tier === '普通' ? 'badge-yellow' : 'badge-red';
+    var barColor = tier === '优秀' ? 'bar-green' : tier === '普通' ? 'bar-yellow' : 'bar-red';
+    return '<tr><td><strong>' + dev.developer_name + '</strong> <span class="badge ' + tierBadge + '">' + tier + '</span></td><td>' + dev.total_issues + '</td><td><span class="badge ' + (dev.blocker_count > 0 ? 'badge-red' : 'badge-green') + '">' + dev.blocker_count + '</span></td><td><span class="badge badge-yellow">' + dev.warning_count + '</span></td><td>' + topTypesHTML(profile) + '</td><td><div class="bar-group"><div class="bar ' + barColor + '" style="width:' + pct + '%"></div><span style="font-size:11px;color:var(--text-muted)">' + pct + '%</span></div></td><td style="font-size:11px;color:var(--text-muted)">' + (profile.last_updated || '-') + '</td></tr>';
+  }).join('');
+
+  el.innerHTML = '<table><thead><tr><th>开发者</th><th>总问题</th><th>Blocker</th><th>Warning</th><th>高频类型</th><th>问题分布</th><th>最后更新</th></tr></thead><tbody>' + rows + '</tbody></table>';
 }
 
 function renderDevDetail(detail, name) {
-  const el = document.getElementById('dev-detail-table');
-  const profile = detail.profile || {};
-  const issues = detail.issues || [];
-  const reviews = detail.reviews || [];
-  el.innerHTML = `
-    <div style="margin-bottom:10px"><strong>${name}</strong> — 近30天</div>
-    <div class="row" style="gap:16px; margin-bottom:12px">
-      <div><span class="badge badge-red">${profile.total_issues || 0}</span> 总问题</div>
-      <div><span class="badge badge-red">${profile.blocker_count || 0}</span> Blocker</div>
-      <div><span class="badge badge-yellow">${profile.warning_count || 0}</span> Warning</div>
-      <div><span class="badge badge-green">${reviews.filter(r => r.result==='pass').length}/${reviews.length}</span> 评审通过</div>
-    </div>
-    <table>
-      <thead><tr><th>类型</th><th>严重程度</th><th>描述</th><th>来源</th><th>时间</th></tr></thead>
-      <tbody>
-        ${issues.slice(0, 10).map(i => `<tr>
-          <td><span class="badge badge-yellow">${i.issue_type}</span></td>
-          <td><span class="badge ${i.severity==='blocker'?'badge-red':'badge-yellow'}">${i.severity}</span></td>
-          <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i.description}</td>
-          <td>${i.source}</td>
-          <td style="font-size:11px;color:var(--text-muted)">${i.created_at ? i.created_at.slice(0,10) : '-'}</td>
-        </tr>`).join('')}
-        ${issues.length === 0 ? '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">无记录</td></tr>' : ''}
-      </tbody>
-    </table>
-  `;
+  var el = document.getElementById('dev-detail-table');
+  var profile = detail.profile || {};
+  var issues = detail.issues || [];
+  var reviews = detail.reviews || [];
+  var passCount = reviews.filter(function(r) { return r.result === 'pass'; }).length;
+  var issuesHtml = issues.slice(0, 10).map(function(i) {
+    return '<tr><td><span class="badge badge-yellow">' + i.issue_type + '</span></td><td><span class="badge ' + (i.severity === 'blocker' ? 'badge-red' : 'badge-yellow') + '">' + i.severity + '</span></td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + i.description + '</td><td>' + i.source + '</td><td style="font-size:11px;color:var(--text-muted)">' + (i.created_at ? i.created_at.slice(0,10) : '-') + '</td></tr>';
+  }).join('');
+  if (issues.length === 0) issuesHtml = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">无记录</td></tr>';
+
+  el.innerHTML = [
+    '<div style="margin-bottom:10px"><strong>' + name + '</strong> — 近30天</div>',
+    '<div class="row" style="gap:16px; margin-bottom:12px">',
+    '  <div><span class="badge badge-red">' + (profile.total_issues || 0) + '</span> 总问题</div>',
+    '  <div><span class="badge badge-red">' + (profile.blocker_count || 0) + '</span> Blocker</div>',
+    '  <div><span class="badge badge-yellow">' + (profile.warning_count || 0) + '</span> Warning</div>',
+    '  <div><span class="badge badge-green">' + passCount + '/' + reviews.length + '</span> 评审通过</div>',
+    '</div>',
+    '<table><thead><tr><th>类型</th><th>严重程度</th><th>描述</th><th>来源</th><th>时间</th></tr></thead><tbody>' + issuesHtml + '</tbody></table>',
+    // ── Learning plan generator ──
+    '<div class="learning-plan" id="learning-plan-' + name.replace(/[^a-zA-Z0-9一-鿿]/g, '_') + '">',
+    '  <div class="learning-generator">',
+    '    <label>📚 分析近</label>',
+    '    <input type="number" id="lp-days-' + name.replace(/[^a-zA-Z0-9一-鿿]/g, '_') + '" value="30" min="7" max="180" step="1">',
+    '    <label>天的错题，生成改进计划</label>',
+    '    <button onclick="generateLearningPlan(\'' + name.replace(/'/g, "\\'") + '\')">生成</button>',
+    '    <span class="status" id="lp-status-' + name.replace(/[^a-zA-Z0-9一-鿿]/g, '_') + '"></span>',
+    '  </div>',
+    '  <div id="lp-result-' + name.replace(/[^a-zA-Z0-9一-鿿]/g, '_') + '"></div>',
+    '</div>',
+  ].join('');
 }
 
 function scrollTo(id) {
-  const el = document.getElementById(id);
+  var el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function renderSummary(problemsData, requirements, teamComp, radarData) {
-  const el = document.getElementById('summary-inner');
-  const problems = problemsData.problems || [];
-  const criticals = problems.filter(p => p.severity === 'critical');
-  const warnings = problems.filter(p => p.severity === 'warning');
+/* ── Learning Plan Generator ── */
+async function generateLearningPlan(name) {
+  var safeName = name.replace(/[^a-zA-Z0-9一-鿿]/g, '_');
+  var daysInput = document.getElementById('lp-days-' + safeName);
+  var status = document.getElementById('lp-status-' + safeName);
+  var result = document.getElementById('lp-result-' + safeName);
+  var days = parseInt(daysInput.value) || 30;
 
-  // High risk / blocked / overdue requirements
-  const highRiskReqs = requirements.filter(s => s.risk === '高' || s.blocked);
-  const overdueReqs = requirements.filter(s => {
+  status.textContent = '正在分析...';
+  status.className = 'status';
+  result.innerHTML = '';
+
+  try {
+    var data = await get(api('/api/learning/' + encodeURIComponent(name) + '?days=' + days));
+    renderLearningPlan(result, data, safeName);
+    status.textContent = '✓ 生成完成';
+    status.className = 'status';
+    status.style.color = 'var(--green)';
+  } catch (e) {
+    status.textContent = '生成失败: ' + e.message;
+    status.className = 'status error';
+    result.innerHTML = '<div class="learning-error-banner">⚠️ 请确保已配置 OPENAI_API_KEY 后重试</div>';
+  }
+}
+
+function renderLearningPlan(el, data, safeName) {
+  var profile = data.profile || {};
+  var weaknesses = data.weaknesses || [];
+  var rootCauses = data.root_causes || {};
+  var recommendations = data.recommendations || [];
+  var collaboration = data.collaboration || [];
+  var hasError = data.has_error;
+
+  if (weaknesses.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--green);font-size:14px">🎉 ' + data.developer + ' 近期表现优秀，无错题记录！</div>';
+    return;
+  }
+
+  var html = '';
+  if (hasError) {
+    html += '<div class="learning-error-banner">⚠️ 部分分析未完成（LLM 不可用），以下为基于统计的 fallback 分析。建议稍后重试获取完整方案。</div>';
+  }
+
+  for (var i = 0; i < weaknesses.length; i++) {
+    var w = weaknesses[i];
+    var issueType = w.type;
+    var displayType = {'transaction':'事务','multithread':'多线程','logging':'日志','api':'API 设计','sql':'SQL','security':'安全'}[issueType] || issueType;
+    var isUrgent = w.blocker_count > 0;
+
+    // Find matching LLM recommendation
+    var rec = null;
+    for (var j = 0; j < recommendations.length; j++) {
+      if (recommendations[j].issue_type === issueType) { rec = recommendations[j]; break; }
+    }
+
+    var rootCause = (rec && rec.root_cause) || rootCauses[issueType] || '需要进一步分析具体错误模式';
+
+    html += [
+      '<div class="learning-weakness">',
+      '  <div class="learning-weakness-header">',
+      '    <div class="learning-weakness-rank ' + (isUrgent ? 'urgent' : 'longterm') + '">' + w.rank + '</div>',
+      '    <div class="learning-weakness-type">' + (isUrgent ? '🔴 ' : '🟡 ') + displayType + '</div>',
+      '    <div class="learning-weakness-stats">',
+      '      <span class="learning-stat" style="background:rgba(108,123,255,0.12);color:var(--accent)">共 ' + w.total_count + ' 次</span>',
+      '      <span class="learning-stat" style="background:rgba(248,113,113,0.12);color:var(--red)">Blocker ' + w.blocker_count + '</span>',
+      '      <span class="learning-stat" style="background:rgba(251,191,36,0.12);color:var(--yellow)">Warning ' + w.warning_count + '</span>',
+      '    </div>',
+      '  </div>',
+      '  <div class="learning-root-cause">🧠 <strong>根源分析：</strong>' + htmlEscape(rootCause) + '</div>',
+    ].join('');
+
+    // Resources
+    if (rec && rec.resources && rec.resources.length > 0) {
+      html += '<div class="learning-sub-title">📚 学习资源</div>';
+      for (var r = 0; r < rec.resources.length; r++) {
+        var res = rec.resources[r];
+        html += '<div class="learning-resource"><span class="star">' + (res.priority === 'high' ? '★' : '☆') + '</span><span>' + htmlEscape(res.name) + '<span class="tag">' + htmlEscape(res.type || '') + '</span></span></div>';
+        if (res.focus) html += '<div class="learning-resource" style="padding-left:30px;font-size:11px;color:var(--text-muted)">→ ' + htmlEscape(res.focus) + '</div>';
+      }
+    }
+
+    // Actions
+    if (rec && rec.actions && rec.actions.length > 0) {
+      html += '<div class="learning-sub-title">🔧 实践行动</div>';
+      for (var a = 0; a < rec.actions.length; a++) {
+        html += '<div class="learning-action">✓ ' + htmlEscape(rec.actions[a]) + '</div>';
+      }
+    }
+
+    // Quizzes
+    if (rec && rec.verification_quizzes && rec.verification_quizzes.length > 0) {
+      html += '<div class="learning-sub-title">✏️ 验证题目（点击展开答案）</div>';
+      for (var q = 0; q < rec.verification_quizzes.length; q++) {
+        var quiz = rec.verification_quizzes[q];
+        var qid = 'lq-' + safeName + '-' + issueType + '-' + q;
+        html += [
+          '<div class="learning-quiz">',
+          '  <div class="learning-quiz-q" onclick="document.getElementById(\'' + qid + '\').classList.toggle(\'visible\');var a=document.getElementById(\'' + qid + '-arr\');if(a)a.classList.toggle(\'open\')">',
+          '    <div class="learning-quiz-num">' + (q + 1) + '</div>',
+          '    <span class="learning-quiz-type">' + htmlEscape(quiz.type || '题目') + '</span>',
+          '    <span style="flex:1;white-space:pre-wrap">' + htmlEscape(quiz.question || '') + '</span>',
+          '    <span class="learning-quiz-arrow" id="' + qid + '-arr">▼</span>',
+          '  </div>',
+          '  <div class="learning-quiz-a" id="' + qid + '">',
+          '    <h5>💡 答案要点</h5>',
+        ].join('');
+        if (quiz.answer_hints && quiz.answer_hints.length > 0) {
+          html += '<ul>';
+          for (var h = 0; h < quiz.answer_hints.length; h++) {
+            html += '<li>' + htmlEscape(quiz.answer_hints[h]) + '</li>';
+          }
+          html += '</ul>';
+        }
+        html += '</div></div>';
+      }
+    }
+
+    // Goal
+    var goal = (rec && rec.goal) || (isUrgent ? '2 周内将此类 Blocker 降为 0' : '1 个月内将此类 Warning 降低 50%');
+    html += '<div class="learning-goal">⏰ <span><strong>改进目标：</strong>' + htmlEscape(goal) + '</span></div>';
+    html += '</div>'; // close weakness
+  }
+
+  // Collaboration
+  if (collaboration.length > 0) {
+    html += '<div class="learning-sub-title">👥 团队协同建议</div><div class="learning-collab">';
+    for (var c = 0; c < collaboration.length; c++) {
+      html += '<div class="learning-collab-item"><span class="icon">💬</span><span>' + htmlEscape(collaboration[c]) + '</span></div>';
+    }
+    html += '</div>';
+  }
+
+  // Next steps
+  html += [
+    '<div class="learning-next">',
+    '  <h4>📝 后续行动</h4>',
+    '  <ol>',
+    '    <li>本周内完成紧急项的学习和验证题目</li>',
+    '    <li>两周后重新运行 <code style="background:rgba(255,255,255,0.05);padding:1px 4px;border-radius:3px">python main.py profile --developer ' + htmlEscape(data.developer) + '</code> 复盘改进效果</li>',
+    '  </ol>',
+    '</div>',
+  ].join('');
+
+  el.innerHTML = html;
+}
+
+function htmlEscape(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function renderSummary(problemsData, requirements, teamComp, radarData, todoData) {
+  var el = document.getElementById('summary-inner');
+  var problems = problemsData.problems || [];
+  var criticals = problems.filter(function(p) { return p.severity === 'critical'; });
+  var warnings = problems.filter(function(p) { return p.severity === 'warning'; });
+
+  var highRiskReqs = requirements.filter(function(s) { return s.risk === '高' || s.blocked; });
+  var overdueReqs = requirements.filter(function(s) {
     if (!s.due_date || s.status === '已完成') return false;
     return new Date(s.due_date) < new Date();
   });
 
-  // Poor developers
-  const poorDevs = teamComp.filter(d => {
-    const t = d.tier || (d.blocker_count > 5 ? '较差' : d.blocker_count > 2 ? '普通' : '优秀');
+  var poorDevs = teamComp.filter(function(d) {
+    var t = d.tier || (d.blocker_count > 5 ? '较差' : d.blocker_count > 2 ? '普通' : '优秀');
     return t === '较差';
   });
 
-  // Build summary items
-  const items = [];
+  var todoItems = todoData.items || [];
+  var criticalTodos = todoItems.filter(function(i) { return i.severity === 'critical'; }).length;
 
-  if (criticals.length > 0) {
-    items.push({ num: criticals.length, label: '紧急问题', cls: 'critical', scroll: 'problem-radar' });
-  }
-  if (highRiskReqs.length > 0) {
-    items.push({ num: highRiskReqs.length, label: '高风险需求', cls: 'critical', scroll: 'requirements-panel' });
-  }
-  if (overdueReqs.length > 0) {
-    items.push({ num: overdueReqs.length, label: '已超期', cls: 'critical', scroll: 'requirements-panel' });
-  }
-  if (warnings.length > 0) {
-    items.push({ num: warnings.length, label: '警告事项', cls: 'warning', scroll: 'problem-radar' });
-  }
-  if (poorDevs.length > 0) {
-    items.push({ num: poorDevs.length, label: '需关注人员', cls: 'warning', scroll: 'dev-leaderboard' });
-  }
+  var items = [];
+  if (criticalTodos > 0) items.push({ num: criticalTodos, label: '紧急待办', cls: 'critical', scroll: 'todo-panel' });
+  if (criticals.length > 0) items.push({ num: criticals.length, label: '紧急问题', cls: 'critical', scroll: 'problem-radar' });
+  if (highRiskReqs.length > 0) items.push({ num: highRiskReqs.length, label: '高风险需求', cls: 'critical', scroll: 'requirements-panel' });
+  if (overdueReqs.length > 0) items.push({ num: overdueReqs.length, label: '已超期', cls: 'critical', scroll: 'requirements-panel' });
+  if (warnings.length > 0) items.push({ num: warnings.length, label: '警告事项', cls: 'warning', scroll: 'problem-radar' });
+  if (poorDevs.length > 0) items.push({ num: poorDevs.length, label: '需关注人员', cls: 'warning', scroll: 'dev-leaderboard' });
 
-  const goodDevs = teamComp.filter(d => {
-    const t = d.tier || (d.blocker_count > 5 ? '较差' : d.blocker_count > 2 ? '普通' : '优秀');
+  var goodDevs = teamComp.filter(function(d) {
+    var t = d.tier || (d.blocker_count > 5 ? '较差' : d.blocker_count > 2 ? '普通' : '优秀');
     return t === '优秀';
   });
-  if (goodDevs.length > 0) {
-    items.push({ num: goodDevs.length, label: '优秀员工', cls: 'good', scroll: 'dev-leaderboard' });
-  }
+  if (goodDevs.length > 0) items.push({ num: goodDevs.length, label: '优秀员工', cls: 'good', scroll: 'dev-leaderboard' });
 
-  // Radar overall average
   if (radarData && radarData.length > 0) {
-    const avgOverall = radarData.reduce((s, d) => s + d.overall, 0) / radarData.length;
-    const cls = avgOverall >= 70 ? 'good' : avgOverall >= 50 ? 'warning' : 'critical';
+    var avgOverall = radarData.reduce(function(s, d) { return s + d.overall; }, 0) / radarData.length;
+    var cls = avgOverall >= 70 ? 'good' : avgOverall >= 50 ? 'warning' : 'critical';
     items.push({ num: Math.round(avgOverall), label: '团队均分', cls: cls, scroll: 'dev-leaderboard' });
   }
 
-  if (items.length === 0) {
-    items.push({ num: '✓', label: '一切正常', cls: 'good', scroll: '' });
-  }
+  if (items.length === 0) items.push({ num: '✓', label: '一切正常', cls: 'good', scroll: '' });
 
-  el.innerHTML = items.map((item, i) => {
-    const sep = i > 0 ? '<div class="summary-sep"></div>' : '';
-    const click = item.scroll ? `onclick="scrollTo('${item.scroll}')"` : '';
-    return sep + `<div class="summary-item ${item.cls}" ${click} title="点击查看详情">
-      <span class="num">${item.num}</span>
-      <span class="label">${item.label}</span>
-    </div>`;
+  el.innerHTML = items.map(function(item, i) {
+    var sep = i > 0 ? '<div class="summary-sep"></div>' : '';
+    var click = item.scroll ? ' onclick="scrollTo(\'' + item.scroll + '\')"' : '';
+    return sep + '<div class="summary-item ' + item.cls + '"' + click + ' title="点击查看详情"><span class="num">' + item.num + '</span><span class="label">' + item.label + '</span></div>';
   }).join('');
 }
 
 function renderRequirements(data) {
-  const el = document.getElementById('requirements-content');
+  var el = document.getElementById('requirements-content');
   if (!data || data.length === 0) {
     el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">暂无需求数据</div>';
     return;
   }
 
-  const priorityLabel = { 'P0': 'P0', 'P1': 'P1', 'P2': 'P2' };
-  const riskColor = { '高': 'red', '中': 'yellow', '低': 'blue', '无': 'green' };
+  var riskColor = { '高': 'red', '中': 'yellow', '低': 'blue', '无': 'green' };
+  var total = data.length;
+  var inProgress = data.filter(function(s) { return s.status === '进行中'; }).length;
+  var done = data.filter(function(s) { return s.status === '已完成'; }).length;
+  var pending = data.filter(function(s) { return s.status === '待开始'; }).length;
+  var blocked = data.filter(function(s) { return s.blocked; }).length;
+  var highRisk = data.filter(function(s) { return s.risk === '高'; }).length;
 
-  // Summary bar
-  const total = data.length;
-  const inProgress = data.filter(s => s.status === '进行中').length;
-  const done = data.filter(s => s.status === '已完成').length;
-  const pending = data.filter(s => s.status === '待开始').length;
-  const blocked = data.filter(s => s.blocked).length;
-  const highRisk = data.filter(s => s.risk === '高').length;
+  var html = [
+    '<div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap">',
+    '  <span style="font-size:13px;color:var(--text-muted)">共 <strong style="color:var(--text)">' + total + '</strong> 个需求</span>',
+    '  <span class="badge badge-green">进行中 ' + inProgress + '</span>',
+    '  <span class="badge badge-green">已完成 ' + done + '</span>',
+    '  <span class="badge badge-yellow">待开始 ' + pending + '</span>',
+    (blocked > 0 ? '<span class="badge badge-red">阻塞 ' + blocked + '</span>' : ''),
+    (highRisk > 0 ? '<span class="badge badge-red">高风险 ' + highRisk + '</span>' : ''),
+    '</div>',
+    '<div class="table-wrap"><table><thead><tr><th>ID</th><th>标题</th><th>负责人</th><th>优先级</th><th>进度</th><th>风险</th><th>截止</th><th>状态</th></tr></thead><tbody>',
+  ].join('');
 
-  let html = `
-    <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap">
-      <span style="font-size:13px;color:var(--text-muted)">共 <strong style="color:var(--text)">${total}</strong> 个需求</span>
-      <span class="badge badge-green">进行中 ${inProgress}</span>
-      <span class="badge badge-green">已完成 ${done}</span>
-      <span class="badge badge-yellow">待开始 ${pending}</span>
-      ${blocked > 0 ? '<span class="badge badge-red">阻塞 ' + blocked + '</span>' : ''}
-      ${highRisk > 0 ? '<span class="badge badge-red">高风险 ' + highRisk + '</span>' : ''}
-    </div>
-    <div class="table-wrap"><table>
-      <thead><tr>
-        <th>ID</th><th>标题</th><th>负责人</th><th>优先级</th><th>进度</th><th>风险</th><th>截止</th><th>状态</th>
-      </tr></thead>
-      <tbody>
-  `;
-
-  data.forEach(s => {
-    const riskCls = riskColor[s.risk] || 'green';
-    const pct = s.progress || 0;
-    const barColor = s.blocked ? 'bar-red' : (pct >= 80 ? 'bar-green' : pct >= 40 ? 'bar-yellow' : 'bar-red');
-    const statusIcon = s.status === '已完成' ? '✅' : s.status === '待开始' ? '⏳' : (s.blocked ? '🚫' : '🔄');
-    const dueStr = s.due_date ? s.due_date.slice(0, 10) : '-';
-    // Calculate days left
-    let daysLeft = '';
+  data.forEach(function(s) {
+    var riskCls = riskColor[s.risk] || 'green';
+    var pct = s.progress || 0;
+    var barColor = s.blocked ? 'bar-red' : (pct >= 80 ? 'bar-green' : pct >= 40 ? 'bar-yellow' : 'bar-red');
+    var statusIcon = s.status === '已完成' ? '✅' : s.status === '待开始' ? '⏳' : (s.blocked ? '🚫' : '🔄');
+    var daysLeft = '';
     if (s.due_date && s.status !== '已完成') {
-      const due = new Date(s.due_date);
-      const now = new Date();
-      const diff = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+      var due = new Date(s.due_date);
+      var now = new Date();
+      var diff = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
       if (diff < 0) daysLeft = '<span style="color:var(--red);font-size:11px">已超期' + Math.abs(diff) + '天</span>';
       else if (diff <= 3) daysLeft = '<span style="color:var(--red);font-size:11px">剩' + diff + '天</span>';
       else if (diff <= 7) daysLeft = '<span style="color:var(--yellow);font-size:11px">剩' + diff + '天</span>';
       else daysLeft = '<span style="font-size:11px;color:var(--text-muted)">剩' + diff + '天</span>';
     }
-
+    var priorityBadge = s.priority === 'P0' ? 'badge-red' : s.priority === 'P1' ? 'badge-yellow' : 'badge-green';
     html += '<tr>' +
-      '<td style="font-size:11px;color:var(--text-muted)">' + s.id + '</td>' +
-      '<td><strong>' + s.title + '</strong></td>' +
+      '<td style="font-size:11px;color:var(--text-muted)">' + (s.id || '') + '</td>' +
+      '<td><strong>' + (s.title || '') + '</strong></td>' +
       '<td>' + (s.owner || '-') + '</td>' +
-      '<td><span class="badge ' + (s.priority === 'P0' ? 'badge-red' : s.priority === 'P1' ? 'badge-yellow' : 'badge-green') + '">' + (s.priority || '-') + '</span></td>' +
+      '<td><span class="badge ' + priorityBadge + '">' + (s.priority || '-') + '</span></td>' +
       '<td style="min-width:120px"><div class="bar-group"><div class="bar ' + barColor + '" style="width:' + pct + '%"></div><span style="font-size:11px;color:var(--text-muted)">' + pct + '%</span></div></td>' +
-      '<td><span class="badge badge-' + riskCls + '">' + s.risk + '</span></td>' +
+      '<td><span class="badge badge-' + riskCls + '">' + (s.risk || '-') + '</span></td>' +
       '<td style="font-size:12px">' + (s.due_date ? s.due_date.slice(0,10) : '-') + '<br>' + daysLeft + '</td>' +
-      '<td>' + statusIcon + ' ' + s.status + '</td>' +
-      '</tr>';
+      '<td>' + statusIcon + ' ' + (s.status || '') + '</td></tr>';
   });
 
   html += '</tbody></table></div>';

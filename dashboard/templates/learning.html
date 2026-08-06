@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>个人提升计划 — TechLead 人效看板</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f1118; --card: #1a1d2e; --card-hover: #222640;
+  --border: #2a2d44; --text: #e2e4f0; --text-muted: #8b8fa8;
+  --accent: #6c7bff; --green: #34d399; --yellow: #fbbf24; --red: #f87171;
+  --blue: #60a5fa; --orange: #fb923c;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+  background: var(--bg); color: var(--text); padding: 24px; min-height: 100vh;
+}
+.container { max-width: 1200px; margin: 0 auto; }
+
+/* ── Header ── */
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+.header h1 { font-size: 22px; font-weight: 600; letter-spacing: 0.3px; }
+.header h1 span { color: var(--accent); }
+.header-right { display: flex; align-items: center; gap: 16px; font-size: 13px; color: var(--text-muted); }
+.header a { color: var(--text-muted); text-decoration: none; font-size: 13px; transition: color 0.15s; }
+.header a:hover { color: var(--accent); }
+
+/* ── Selector bar ── */
+.selector-bar {
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 18px 24px; margin-bottom: 24px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.selector-bar label { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+.selector-bar select, .selector-bar input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); padding: 7px 12px; font-size: 13px; font-family: inherit;
+}
+.selector-bar select { min-width: 140px; cursor: pointer; }
+.selector-bar input[type=number] { width: 70px; }
+.selector-bar button {
+  background: var(--accent); color: #fff; border: none; border-radius: 6px;
+  padding: 8px 20px; font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: opacity 0.15s;
+}
+.selector-bar button:hover { opacity: 0.85; }
+.selector-bar button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── State views ── */
+.loading-state { text-align: center; padding: 80px 20px; color: var(--text-muted); }
+.loading-state .spinner { display: inline-block; width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.error-state { text-align: center; padding: 60px; color: var(--red); }
+.error-state .big { font-size: 40px; display: block; margin-bottom: 12px; }
+.empty-state { text-align: center; padding: 80px 20px; }
+.empty-state .big { font-size: 48px; display: block; margin-bottom: 12px; }
+.empty-state p { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
+
+/* ── Profile cards ── */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 16px 18px; transition: background 0.15s;
+}
+.card:hover { background: var(--card-hover); }
+.card .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.card .value { font-size: 26px; font-weight: 700; }
+.card .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.card .red { color: var(--red); } .card .yellow { color: var(--yellow); } .card .green { color: var(--green); } .card .blue { color: var(--blue); } .card .accent { color: var(--accent); }
+
+/* ── Weakness section ── */
+.section-title {
+  font-size: 16px; font-weight: 600; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.weakness-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 24px; margin-bottom: 16px; transition: border-color 0.15s;
+}
+.weakness-card:hover { border-color: var(--accent); }
+.weakness-header {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.weakness-rank {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700;
+}
+.weakness-rank.urgent { background: rgba(248,113,113,0.15); color: var(--red); }
+.weakness-rank.longterm { background: rgba(96,165,250,0.15); color: var(--blue); }
+.weakness-type {
+  font-size: 16px; font-weight: 600; text-transform: capitalize;
+}
+.weakness-stats { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+.weakness-stats .stat {
+  padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;
+}
+.stat-blocker { background: rgba(248,113,113,0.12); color: var(--red); }
+.stat-warning { background: rgba(251,191,36,0.12); color: var(--yellow); }
+.stat-total { background: rgba(108,123,255,0.12); color: var(--accent); }
+
+/* ── Root cause ── */
+.root-cause {
+  background: rgba(108,123,255,0.06); border-left: 3px solid var(--accent);
+  border-radius: 0 6px 6px 0; padding: 12px 16px; margin-bottom: 20px; font-size: 14px;
+  line-height: 1.7; color: var(--text);
+}
+
+/* ── Sub-sections ── */
+.sub-section { margin-bottom: 18px; }
+.sub-section h4 {
+  font-size: 13px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px;
+}
+
+/* ── Resource list ── */
+.resource-list { display: flex; flex-direction: column; gap: 6px; }
+.resource-item {
+  display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px;
+  background: rgba(255,255,255,0.02); border-radius: 6px; font-size: 13px;
+}
+.resource-star { color: var(--yellow); flex-shrink: 0; }
+.resource-body { flex: 1; }
+.resource-name { font-weight: 500; color: var(--text); }
+.resource-focus { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.resource-type {
+  font-size: 11px; padding: 1px 6px; border-radius: 4px;
+  background: rgba(108,123,255,0.1); color: var(--accent); white-space: nowrap;
+}
+
+/* ── Action list ── */
+.action-list { display: flex; flex-direction: column; gap: 6px; }
+.action-item {
+  display: flex; align-items: flex-start; gap: 8px; font-size: 13px;
+  padding: 6px 0; color: var(--text); line-height: 1.6;
+}
+.action-item .check { color: var(--green); flex-shrink: 0; }
+
+/* ── Quiz card ── */
+.quiz-list { display: flex; flex-direction: column; gap: 10px; }
+.quiz-item {
+  background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden;
+}
+.quiz-question {
+  display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px;
+  cursor: pointer; user-select: none; transition: background 0.15s;
+}
+.quiz-question:hover { background: rgba(255,255,255,0.03); }
+.quiz-num {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(108,123,255,0.1); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600;
+}
+.quiz-type {
+  font-size: 11px; padding: 2px 8px; border-radius: 4px; flex-shrink: 0;
+  background: rgba(52,211,153,0.1); color: var(--green);
+}
+.quiz-text { flex: 1; font-size: 13px; line-height: 1.6; color: var(--text); white-space: pre-wrap; }
+.quiz-toggle { color: var(--text-muted); font-size: 12px; flex-shrink: 0; transition: transform 0.2s; }
+.quiz-toggle.open { transform: rotate(180deg); }
+.quiz-answer {
+  display: none; padding: 0 16px 16px 54px; font-size: 13px;
+  border-top: 1px solid var(--border); padding-top: 12px;
+}
+.quiz-answer.visible { display: block; }
+.quiz-answer h5 { font-size: 12px; color: var(--green); margin-bottom: 6px; font-weight: 600; }
+.quiz-answer ul { list-style: none; padding: 0; }
+.quiz-answer li {
+  padding: 3px 0; color: var(--text-muted); font-size: 13px; line-height: 1.6;
+}
+.quiz-answer li::before { content: '• '; color: var(--accent); }
+
+/* ── Goal ── */
+.goal-box {
+  background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.2);
+  border-radius: 8px; padding: 12px 16px; font-size: 13px;
+  display: flex; align-items: center; gap: 10px; color: var(--green);
+}
+.goal-box .icon { font-size: 18px; flex-shrink: 0; }
+
+/* ── Collaboration ── */
+.collab-section { margin-bottom: 24px; }
+.collab-list { display: flex; flex-direction: column; gap: 6px; }
+.collab-item {
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px 16px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  font-size: 13px; line-height: 1.6;
+}
+.collab-item .icon { font-size: 16px; flex-shrink: 0; }
+
+/* ── Next steps ── */
+.next-steps {
+  background: linear-gradient(135deg, var(--card) 0%, #1e2240 100%);
+  border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px;
+}
+.next-steps h3 { font-size: 15px; margin-bottom: 10px; }
+.next-steps ol { padding-left: 20px; }
+.next-steps li { font-size: 13px; padding: 4px 0; color: var(--text-muted); line-height: 1.6; }
+
+/* ── Error banner ── */
+.error-banner {
+  background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25);
+  border-radius: 8px; padding: 10px 16px; margin-bottom: 20px;
+  font-size: 13px; color: var(--red); display: flex; align-items: center; gap: 8px;
+}
+
+@media (max-width: 700px) {
+  .cards { grid-template-columns: repeat(2, 1fr); }
+  .weakness-header { flex-direction: column; align-items: flex-start; }
+  .weakness-stats { margin-left: 0; }
+  body { padding: 14px; }
+  .selector-bar { flex-direction: column; align-items: stretch; }
+}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+  <div class="loading-state">
+    <div class="spinner"></div>
+    <div>加载中...</div>
+  </div>
+</div>
+
+<script>
+const API = "";
+const DEMO_MODE = true;
+function api(path) { const sep = path.includes('?') ? '&' : '?'; return DEMO_MODE ? path + sep + 'demo=true' : path; }
+const COLORS = { accent: '#6c7bff', green: '#34d399', yellow: '#fbbf24', red: '#f87171', blue: '#60a5fa' };
+const LABEL_MAP = { transaction: '事务', multithread: '多线程', logging: '日志', api: 'API 设计', sql: 'SQL', security: '安全' };
+
+async function get(url) { const r = await fetch(api(url)); if (!r.ok) throw new Error(await r.text()); return r.json(); }
+
+function renderShell() {
+  document.getElementById('app').innerHTML = [
+    '<div class="header">',
+    '  <h1>📚 个人<span>提升</span>计划</h1>',
+    '  <div class="header-right">',
+    '    <a href="/">← 返回看板</a>',
+    '    <span id="last-update"></span>',
+    '  </div>',
+    '</div>',
+    '<div class="selector-bar" id="selector-bar">',
+    '  <label>开发者：</label>',
+    '  <select id="dev-select"></select>',
+    '  <label>时间范围：</label>',
+    '  <input type="number" id="days-input" value="30" min="7" max="180" step="1">',
+    '  <label>天</label>',
+    '  <button id="go-btn" onclick="loadPlan()">生成提升计划</button>',
+    '  <span style="font-size:11px;color:var(--text-muted);margin-left:auto">基于错题本数据，AI 分析师会分析具体错误模式并生成个性化方案</span>',
+    '</div>',
+    '<div id="content"></div>',
+  ].join('');
+}
+
+async function init() {
+  renderShell();
+  try {
+    const devs = await get('/api/developers');
+    const sel = document.getElementById('dev-select');
+    if (devs.length === 0) {
+      sel.innerHTML = '<option value="">— 暂无开发者数据 —</option>';
+      return;
+    }
+    sel.innerHTML = devs.map(function(d, i) {
+      return '<option value="' + d.developer_name + '"' + (i === 0 ? ' selected' : '') + '>' + d.developer_name + '</option>';
+    }).join('');
+    // Auto-load the first developer
+    loadPlan();
+  } catch (e) {
+    document.getElementById('content').innerHTML = '<div class="error-state"><span class="big">❌</span>加载开发者列表失败: ' + e.message + '</div>';
+  }
+}
+
+async function loadPlan() {
+  var dev = document.getElementById('dev-select').value;
+  var days = parseInt(document.getElementById('days-input').value) || 30;
+  if (!dev) return;
+
+  var content = document.getElementById('content');
+  var btn = document.getElementById('go-btn');
+  btn.disabled = true;
+  btn.textContent = '生成中...';
+  content.innerHTML = '<div class="loading-state"><div class="spinner"></div><div>正在分析 ' + dev + ' 近 ' + days + ' 天的错题数据...</div></div>';
+
+  try {
+    var data = await get('/api/learning/' + encodeURIComponent(dev) + '?days=' + days);
+    document.getElementById('last-update').textContent = '生成时间: ' + (data.timestamp ? data.timestamp.slice(0, 16).replace('T', ' ') : '');
+    renderPlan(data);
+  } catch (e) {
+    content.innerHTML = '<div class="error-state"><span class="big">❌</span>生成失败: ' + e.message + '<br><br>请确保 OPENAI_API_KEY 已配置，然后重试。</div>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '生成提升计划';
+  }
+}
+
+function renderPlan(data) {
+  var content = document.getElementById('content');
+  var profile = data.profile || {};
+  var weaknesses = data.weaknesses || [];
+  var teamMetrics = data.team_metrics || {};
+  var rootCauses = data.root_causes || {};
+  var recommendations = data.recommendations || [];
+  var collaboration = data.collaboration || [];
+  var hasError = data.has_error;
+  var errorMsg = data.error_message || '';
+
+  // Error banner
+  var errorBanner = '';
+  if (hasError) {
+    errorBanner = '<div class="error-banner">⚠️ 方案生成过程中部分分析未完成（' + htmlEscape(errorMsg) + '）。下方展示已生成的内容，建议稍后重试获取完整方案。</div>';
+  }
+
+  // No issues — show empty state
+  if (weaknesses.length === 0) {
+    content.innerHTML = errorBanner + [
+      '<div class="empty-state">',
+      '  <span class="big">🎉</span>',
+      '  <p>' + htmlEscape(data.developer) + ' 近期表现优秀，无错题记录！</p>',
+      '  <p style="font-size:13px;color:var(--text-muted)">继续保持当前的编码习惯</p>',
+      '</div>',
+    ].join('');
+    return;
+  }
+
+  // Profile cards
+  var totalIssues = profile.total_issues || 0;
+  var blockerCount = profile.blocker_count || 0;
+  var devBlockerPct = teamMetrics.dev_blocker_pct || 0;
+  var teamAvgPct = teamMetrics.team_avg_blocker_pct || 0;
+  var vs = teamMetrics.vs_team || 0;
+  var direction = vs > 0 ? '↑ 高于' : (vs < 0 ? '↓ 低于' : '≈ 持平');
+  var vsColor = vs > 5 ? 'red' : vs > 0 ? 'yellow' : 'green';
+
+  var cardsHTML = [
+    '<div class="cards">',
+    '  <div class="card"><div class="label">总问题数</div><div class="value accent">' + totalIssues + '</div><div class="sub">近 ' + data.days + ' 天</div></div>',
+    '  <div class="card"><div class="label">Blocker</div><div class="value ' + (blockerCount > 3 ? 'red' : blockerCount > 0 ? 'yellow' : 'green') + '">' + blockerCount + '</div><div class="sub">需立即修复</div></div>',
+    '  <div class="card"><div class="label">Blocker 占比</div><div class="value ' + vsColor + '">' + devBlockerPct + '%</div><div class="sub">' + direction + ' 团队均值 ' + teamAvgPct + '%</div></div>',
+    '  <div class="card"><div class="label">弱点数</div><div class="value blue">' + weaknesses.length + '</div><div class="sub">高频问题类型</div></div>',
+    '</div>',
+  ].join('');
+
+  // Weakness cards
+  var weaknessCards = '';
+  for (var i = 0; i < weaknesses.length; i++) {
+    var w = weaknesses[i];
+    var issueType = w.type;
+
+    // Find matching recommendation from LLM output
+    var rec = null;
+    for (var j = 0; j < recommendations.length; j++) {
+      if (recommendations[j].issue_type === issueType) {
+        rec = recommendations[j];
+        break;
+      }
+    }
+
+    var isUrgent = w.blocker_count > 0;
+    var urgencyClass = isUrgent ? 'urgent' : 'longterm';
+    var displayType = LABEL_MAP[issueType] || issueType;
+    var rootCause = (rec && rec.root_cause) || rootCauses[issueType] || '需要进一步分析具体错误模式';
+
+    weaknessCards += [
+      '<div class="weakness-card">',
+      // Header
+      '  <div class="weakness-header">',
+      '    <div class="weakness-rank ' + urgencyClass + '">' + w.rank + '</div>',
+      '    <div class="weakness-type">' + (isUrgent ? '🔴 ' : '🟡 ') + displayType + '</div>',
+      '    <div class="weakness-stats">',
+      '      <span class="stat stat-total">共 ' + w.total_count + ' 次</span>',
+      '      <span class="stat stat-blocker">Blocker ' + w.blocker_count + '</span>',
+      '      <span class="stat stat-warning">Warning ' + w.warning_count + '</span>',
+      '    </div>',
+      '  </div>',
+      // Root cause
+      '  <div class="root-cause">🧠 <strong>根源分析：</strong>' + htmlEscape(rootCause) + '</div>',
+    ].join('');
+
+    // Resources
+    if (rec && rec.resources && rec.resources.length > 0) {
+      weaknessCards += '<div class="sub-section"><h4>📚 学习资源</h4><div class="resource-list">';
+      for (var r = 0; r < rec.resources.length; r++) {
+        var res = rec.resources[r];
+        var star = res.priority === 'high' ? '★' : '☆';
+        weaknessCards += [
+          '<div class="resource-item">',
+          '  <div class="resource-star">' + star + '</div>',
+          '  <div class="resource-body">',
+          '    <div class="resource-name">' + htmlEscape(res.name) + '</div>',
+          '    <div class="resource-focus">' + htmlEscape(res.focus || '') + '</div>',
+          '  </div>',
+          '  <span class="resource-type">' + htmlEscape(res.type || '') + '</span>',
+          '</div>',
+        ].join('');
+      }
+      weaknessCards += '</div></div>';
+    }
+
+    // Actions
+    if (rec && rec.actions && rec.actions.length > 0) {
+      weaknessCards += '<div class="sub-section"><h4>🔧 实践行动</h4><div class="action-list">';
+      for (var a = 0; a < rec.actions.length; a++) {
+        weaknessCards += '<div class="action-item"><span class="check">✓</span><span>' + htmlEscape(rec.actions[a]) + '</span></div>';
+      }
+      weaknessCards += '</div></div>';
+    }
+
+    // Quizzes
+    if (rec && rec.verification_quizzes && rec.verification_quizzes.length > 0) {
+      weaknessCards += '<div class="sub-section"><h4>✏️ 验证题目（点击展开答案）</h4><div class="quiz-list">';
+      for (var q = 0; q < rec.verification_quizzes.length; q++) {
+        var quiz = rec.verification_quizzes[q];
+        var quizId = 'quiz-' + issueType + '-' + q;
+        weaknessCards += [
+          '<div class="quiz-item">',
+          '  <div class="quiz-question" onclick="toggleQuiz(\'' + quizId + '\')">',
+          '    <div class="quiz-num">' + (q + 1) + '</div>',
+          '    <span class="quiz-type">' + htmlEscape(quiz.type || '题目') + '</span>',
+          '    <div class="quiz-text">' + htmlEscape(quiz.question || '') + '</div>',
+          '    <span class="quiz-toggle" id="' + quizId + '-arrow">▼</span>',
+          '  </div>',
+          '  <div class="quiz-answer" id="' + quizId + '">',
+          '    <h5>💡 答案要点</h5>',
+        ].join('');
+        if (quiz.answer_hints && quiz.answer_hints.length > 0) {
+          weaknessCards += '<ul>';
+          for (var h = 0; h < quiz.answer_hints.length; h++) {
+            weaknessCards += '<li>' + htmlEscape(quiz.answer_hints[h]) + '</li>';
+          }
+          weaknessCards += '</ul>';
+        }
+        weaknessCards += '</div></div>';
+      }
+      weaknessCards += '</div></div>';
+    }
+
+    // Goal
+    var goal = (rec && rec.goal) || (isUrgent ? '2 周内将此类 Blocker 降为 0' : '1 个月内将此类 Warning 降低 50%');
+    weaknessCards += [
+      '<div class="goal-box">',
+      '  <span class="icon">⏰</span>',
+      '  <span><strong>改进目标：</strong>' + htmlEscape(goal) + '</span>',
+      '</div>',
+      '</div>',  // close weakness-card
+    ].join('');
+  }
+
+  // Collaboration
+  var collabHTML = '';
+  if (collaboration.length > 0) {
+    collabHTML = [
+      '<div class="collab-section">',
+      '  <div class="section-title">👥 团队协同建议</div>',
+      '  <div class="collab-list">',
+    ].join('');
+    for (var c = 0; c < collaboration.length; c++) {
+      collabHTML += '<div class="collab-item"><span class="icon">💬</span><span>' + htmlEscape(collaboration[c]) + '</span></div>';
+    }
+    collabHTML += '</div></div>';
+  }
+
+  // Next steps
+  var nextStepsHTML = [
+    '<div class="next-steps">',
+    '  <h3>📝 后续行动</h3>',
+    '  <ol>',
+    '    <li>本周内完成紧急项的学习和验证题目</li>',
+    '    <li>两周后运行 <code style="background:rgba(255,255,255,0.05);padding:1px 6px;border-radius:3px">python main.py profile --developer ' + htmlEscape(data.developer) + '</code> 复盘改进效果</li>',
+    '    <li>在下次周会分享学习成果和踩坑经验</li>',
+    '  </ol>',
+    '</div>',
+  ].join('');
+
+  content.innerHTML = errorBanner + cardsHTML + [
+    '<div class="section-title">🎯 弱点分析与提升方案</div>',
+    weaknessCards,
+    collabHTML,
+    nextStepsHTML,
+  ].join('');
+}
+
+function toggleQuiz(id) {
+  var answer = document.getElementById(id);
+  var arrow = document.getElementById(id + '-arrow');
+  if (!answer || !arrow) return;
+  var isOpen = answer.classList.contains('visible');
+  if (isOpen) {
+    answer.classList.remove('visible');
+    arrow.classList.remove('open');
+  } else {
+    answer.classList.add('visible');
+    arrow.classList.add('open');
+  }
+}
+
+function htmlEscape(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+init();
+</script>
+</body>
+</html>

@@ -80,11 +80,55 @@ class TestTechLeadAgent(unittest.TestCase):
         self._llm_patcher.stop()
 
     def _patch_llm(self):
-        self._llm_patcher = patch("openai.OpenAI")
+        self._llm_patcher = patch("agents.base_agent.OpenAI")
         mo = self._llm_patcher.start()
         mc = MagicMock()
-        mc.create = MagicMock(return_value=mock_llm(
-            "🔴 Blocker: [F001] 文件大小限制\n🟡 Warning: [F004] 存储方案"))
+
+        # Build a mock LLM response that works for all agents.
+        # - The old text-format lines satisfy DesignReviewer._parse_review_response
+        #   and CodeReviewer._parse_review_response (they look for Blocker/Warning markers).
+        # - The JSON block satisfies the new LearningAdvisor._parse_llm_response.
+        mock_llm_json = json.dumps({
+            "root_causes": {
+                "transaction": "不理解 Spring AOP 代理机制——反复在 private 方法标注 @Transactional 且使用 this 自调用，导致事务注解完全失效。",
+                "logging": "缺乏日志上下文意识——日志中缺少业务标识（orderId/userId）。"
+            },
+            "recommendations": [
+                {
+                    "rank": 1,
+                    "issue_type": "transaction",
+                    "urgency": "【紧急】",
+                    "root_cause": "不理解 Spring AOP 代理机制——反复在 private 方法标注 @Transactional 且使用 this 自调用。",
+                    "resources": [
+                        {"name": "Spring 官方 AOP 代理文档", "type": "官方文档", "focus": "第 5.8 节 AOP Proxies，理解 self-invocation 问题", "priority": "high"},
+                        {"name": "Spring 事务失效 8 种场景", "type": "视频", "focus": "对着视频敲 demo，验证三种调用场景", "priority": "high"}
+                    ],
+                    "actions": [
+                        "搭建 Spring Boot demo，验证 public 代理调用、private 方法、this 自调用三种事务场景",
+                        "提交 MR 前自查 @Transactional 注解位置"
+                    ],
+                    "verification_quizzes": [
+                        {"type": "代码题", "question": "@Transactional 标注在 private 方法上会生效吗？", "answer_hints": ["不生效，private 方法不会被 AOP 代理拦截"]},
+                        {"type": "改错题", "question": "如何修改使事务生效？给出两种方案。", "answer_hints": ["移到 public 方法", "抽到独立 Bean"]}
+                    ],
+                    "goal": "2 周内将 transaction 类 Blocker 降为 0"
+                }
+            ],
+            "collaboration": [
+                "建议安排张三在下周需求评审会上分享 Spring 事务踩坑经验",
+                "安排一次与架构师的 1on1 Pair Programming"
+            ]
+        }, ensure_ascii=False)
+
+        # Prepend a text-format header so the old parsers can still find something
+        mock_text_header = (
+            "🔴 Blocker: [F001] 文件大小限制\n"
+            "🟡 Warning: [F004] 存储方案\n"
+            "🟢 Info: [F007] 上传进度\n"
+        )
+        mock_full = mock_text_header + "\n" + mock_llm_json
+
+        mc.create = MagicMock(return_value=mock_llm(mock_full))
         mo.return_value.chat.completions = mc
 
     async def _run(self, message, extra=None, mock_tapd=False, mock_git=False):
@@ -112,6 +156,8 @@ class TestTechLeadAgent(unittest.TestCase):
             g.fetch_mr_diff = AsyncMock(return_value="--- a/X.java\n+++ b/X.java\n@@ -1 +1 @@\n-old\n+new")
             g.is_configured = MagicMock(return_value=True)
             patches.append(("tools.git_client.get_git_client", lambda: g))
+            # Also patch where CodeReviewerAgent imports get_git_client
+            patches.append(("agents.code_reviewer.get_git_client", lambda: g))
         for target, factory in patches:
             patcher = patch(target, factory)
             patcher.start()
@@ -142,7 +188,7 @@ class TestTechLeadAgent(unittest.TestCase):
     def test_03_code_review(self):
         """3. Code review — orchestrator routes to code_review."""
         async def t():
-            r = await self._run("CR MR !111", {"mr_id": 111})
+            r = await self._run("CR MR !111", {"mr_id": 111}, mock_git=True)
             self.assertEqual(r["intent"], "code_review")
         asyncio.run(t())
         print("  ✅ code_review: intent=code_review")
