@@ -256,18 +256,22 @@ def todo(demo: bool = Query(False)):
     pending_reviews = cur.fetchone()[0]
 
     # 2. Overdue / high-risk requirements needing attention
-    cur.execute("""
-        SELECT COUNT(*) as cnt FROM stories
-        WHERE (risk='高' OR blocked=1) AND status != '已完成'
-    """)
-    urgent_requirements = cur.fetchone()[0]
-
-    # 3. Overdue requirements
-    cur.execute("""
-        SELECT COUNT(*) as cnt FROM stories
-        WHERE due_date < datetime('now', 'localtime') AND status != '已完成'
-    """)
-    overdue = cur.fetchone()[0]
+    try:
+        cur.execute("""
+            SELECT COUNT(*) as cnt FROM stories
+            WHERE (risk='高' OR blocked=1) AND status != '已完成'
+        """)
+        urgent_requirements = cur.fetchone()[0]
+    except Exception:
+        urgent_requirements = 0
+    try:
+        cur.execute("""
+            SELECT COUNT(*) as cnt FROM stories
+            WHERE due_date < datetime('now', 'localtime') AND status != '已完成'
+        """)
+        overdue = cur.fetchone()[0]
+    except Exception:
+        overdue = 0
 
     # 4. Developers with blocker overload
     cur.execute("""
@@ -486,7 +490,10 @@ def trends(days: int = Query(60), demo: bool = Query(False)):
 def team_composition(demo: bool = Query(False)):
     conn = get_db(demo)
     cur = conn.cursor()
-    cur.execute("SELECT developer_name, total_issues, blocker_count, tier FROM developer_profiles ORDER BY total_issues DESC")
+    try:
+        cur.execute("SELECT developer_name, total_issues, blocker_count, tier FROM developer_profiles ORDER BY total_issues DESC")
+    except Exception:
+        cur.execute("SELECT developer_name, total_issues, blocker_count, '' as tier FROM developer_profiles ORDER BY total_issues DESC")
     rows = cur.fetchall()
     conn.close()
     return [dict(r) for r in rows]
@@ -514,16 +521,19 @@ def requirements(demo: bool = Query(False)):
     """Return requirements with progress, risk, and status."""
     conn = get_db(demo)
     cur = conn.cursor()
-    cur.execute("""
-        SELECT id, title, owner, status, progress, priority,
-               begin_date, due_date, risk, blocked, story_type, updated_at
-        FROM stories
-        ORDER BY
-            CASE priority WHEN 'P0' THEN 0 WHEN 'P1' THEN 1 ELSE 2 END,
-            CASE risk WHEN '高' THEN 0 WHEN '中' THEN 1 WHEN '低' THEN 2 ELSE 3 END,
-            progress ASC
-    """)
-    rows = cur.fetchall()
+    try:
+        cur.execute("""
+            SELECT id, title, owner, status, progress, priority,
+                   begin_date, due_date, risk, blocked, story_type, updated_at
+            FROM stories
+            ORDER BY
+                CASE priority WHEN 'P0' THEN 0 WHEN 'P1' THEN 1 ELSE 2 END,
+                CASE risk WHEN '高' THEN 0 WHEN '中' THEN 1 WHEN '低' THEN 2 ELSE 3 END,
+                progress ASC
+        """)
+        rows = cur.fetchall()
+    except Exception:
+        rows = []
     conn.close()
     return [dict(r) for r in rows]
 

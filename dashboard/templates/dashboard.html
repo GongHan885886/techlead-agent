@@ -249,14 +249,23 @@ function render(dateStr) {
 
 async function load() {
   try {
-    const [overview, developers, trendsData, reviewStats, teamComp, problemsData, radarData, requirements, todoData, issueBreakdown, costData, latencyData, llmTrends, cacheData] = await Promise.all([
+    const [overview, developers, trendsData, reviewStats, teamComp, problemsData, radarData, requirements, todoData, issueBreakdown] = await Promise.all([
       get(api('/api/overview')), get(api('/api/developers')), get(api('/api/trends')),
       get(api('/api/review-stats')), get(api('/api/team-composition')),
       get(api('/api/problems')), get(api('/api/developer-radar')),
       get(api('/api/requirements')), get(api('/api/todo')), get(api('/api/issue-breakdown')),
-      get(api('/api/cost?days=7')), get(api('/api/latency?days=7')),
-      get(api('/api/llm-trends?days=30')), get(api('/api/cache-efficiency?days=7')),
     ]);
+
+    // Observability APIs — load async so they don't block the main page
+    var costData = null, latencyData = null, llmTrends = null, cacheData = null;
+    try {
+      [costData, latencyData, llmTrends, cacheData] = await Promise.all([
+        get(api('/api/cost?days=7')), get(api('/api/latency?days=7')),
+        get(api('/api/llm-trends?days=30')), get(api('/api/cache-efficiency?days=7')),
+      ]);
+    } catch (e) {
+      console.warn('LLM observability APIs unavailable:', e.message);
+    }
 
     const tierCounts = {};
     teamComp.forEach(d => {
@@ -986,6 +995,7 @@ function renderRequirements(data) {
 function renderLLMCostCards(data) {
   var el = document.getElementById('llm-cost-cards');
   if (!el) return;
+  if (!data) { el.innerHTML = ''; return; }
   var tc = data.total_tokens || 0;
   var cost = data.total_cost || 0;
   var calls = data.total_calls || 0;
@@ -1002,6 +1012,10 @@ var _llmTokenChart = null;
 function renderLLMTokenTrend(data) {
   var el = document.getElementById('llm-token-trend');
   if (!el) return;
+  if (!data || !data.daily || data.daily.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px">暂无 LLM 调用数据</div>';
+    return;
+  }
   var ctx = document.createElement('canvas');
   el.innerHTML = '';
   el.appendChild(ctx);
