@@ -39,6 +39,9 @@ MANIFEST
 *.db-shm
 *.db-wal
 
+# Cache
+storage/cache/*.pkl
+
 # Logs
 *.log
 storage/logs/*.jsonl
