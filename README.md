@@ -12,19 +12,22 @@
 - [系统架构](#系统架构)
 - [快速开始](#快速开始)
 - [使用示例](#使用示例)
+- [人效看板](#人效看板)
 - [配置说明](#配置说明)
+- [可观测性](#可观测性)
 - [开发指南](#开发指南)
 
 ## 项目概述
 
-TechLead Manager Agent 是一个基于 AI Harness 架构的多 Agent 系统，帮助技术经理高效完成方案评审、代码审查、交付追踪等日常工作。
+TechLead Manager Agent 是一个基于多 Agent 架构的 AI 系统，帮助技术经理高效完成方案评审、代码审查、交付追踪、个性化学习建议等日常工作。
 
 ### 核心目标
 
 - 🤖 **自动化扫描**：每日自动扫描待评审方案、待处理 MR、在途需求风险
 - 📊 **专业化评审**：针对不同场景加载对应规则，精准检查
 - 🔄 **人机协作**：关键决策点保留人工确认，不替代技术经理判断
-- 📈 **持续成长**：建立"错题本"机制，为每位开发者生成个性化学习建议
+- 📈 **持续成长**：建立"错题本"机制，为每位开发者生成个性化学习方案
+- 👁️ **全链路可观测**：Token 追踪、延迟监控、缓存效率、人效看板
 
 ## 核心功能
 
@@ -49,54 +52,76 @@ TechLead Manager Agent 是一个基于 AI Harness 架构的多 Agent 系统，�
 - 识别进度风险
 - 计算效率/质量指标，对比团队均值
 
-### 5. 学习建议
+### 5. 学习建议（LLM 驱动）
 - 基于错题本数据生成个性化学习计划
-- 输出弱点定位 + 根源分析 + 学习推荐 + 改进目标
+- **根源分析**：读取具体错误描述，由 LLM 识别错误模式而非泛泛分类
+- **精准资源推荐**：匹配具体错误模式推荐学习资料（而非通用书单）
+- **验证题目**：每种弱点 2-3 道代码题/改错题/场景题，附答案要点
+- **可量化目标**：改进目标可验证，如"2 周内将 transaction 类 Blocker 降为 0"
+
+### 6. 人效看板（Web Dashboard）
+- 开发者和团队问题雷达
+- 交付周期/缺陷率/CR 吞吐量趋势
+- 开发者 5 维能力雷达图
+- **LLM 成本与效率面板**：Token 消耗趋势、Agent 延迟 P50/P95、缓存命中率
 
 ## 系统架构
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         TechLead Manager Agent System                       │
-│                                                                             │
-│  ┌───────────────────────────────────────────────────────────────────────┐  │
-│  │                        Orchestrator Agent                             │  │
-│  │   • 意图识别与任务调度                                                │  │
-│  └─────────┬─────────────────────┬─────────────────────┬──────────────┘  │
-│            │                     │                     │                  │
-│  ┌───────────────────┐ ┌───────────────────┐ ┌──────────────────────────┐ │
-│  │  DesignReviewer   │ │   CodeReviewer    │ │   DeliveryTracker        │ │
-│  │  Agent            │ │   Agent           │ │   Agent                  │ │
-│  └───────────────────┘ └───────────────────┘ └──────────────────────────┘ │
-│                                                                             │
-│  ┌───────────────────────────────────────────────────────────────────────┐│
-│  │                          Tool Layer                                   ││
-│  │  TAPD API / Git API / 规则加载器 / 通知服务 / 记忆读写                 ││
-│  └───────────────────────────────────────────────────────────────────────┘│
-│                                                                             │
-│  ┌───────────────────────────────────────────────────────────────────────┐│
-│  │                    Memory Layer (SQLite)                              ││
-│  │  短期记忆 + 长期记忆 + 错题本                                          ││
-│  └───────────────────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         TechLead Manager Agent System                         │
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │                         CLI (main.py / Typer)                          │  │
+│  │   scan / review-design / review-mr / profile / dashboard / status      │  │
+│  └──────────────────────────────────┬─────────────────────────────────────┘  │
+│                                     │                                       │
+│  ┌──────────────────────────────────▼─────────────────────────────────────┐  │
+│  │                         Orchestrator Agent                             │  │
+│  │   • 意图识别（关键词匹配）• 任务调度 • 上下文传递（trace_id/span）      │  │
+│  └──┬──────────────┬──────────────┬──────────────┬──────────────────────┘  │
+│     │              │              │              │                         │
+│  ┌──▼─────────┐ ┌──▼─────────┐ ┌──▼──────────┐ ┌──▼───────────────┐      │
+│  │DesignReview │ │CodeReview  │ │DeliveryTrack │ │LearningAdvisor    │      │
+│  │er Agent     │ │er Agent    │ │er Agent      │ │Agent (LLM驱动)    │      │
+│  └─────────────┘ └────────────┘ └──────────────┘ └──────────────────┘      │
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │                          Tool Layer                                    │  │
+│  │  TAPD API / Git API / 规则加载器 / 通知服务 / 缓存管理器 / 记忆读写    │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │                    Memory Layer (SQLite)                               │  │
+│  │  developer_issues │ developer_profiles │ review_history               │  │
+│  │  team_metrics     │ **spans** (可观测性) │ stories                    │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │                    Web Dashboard (FastAPI)                              │  │
+│  │  • 问题雷达 • 交付趋势 • 5 维雷达图 • 开发者详情                       │  │
+│  │  • **LLM 成本面板** • **Token 趋势图** • **Agent 延迟 P50/P95**        │  │
+│  │  • **个人提升计划页面**（嵌入/独立）                                    │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Agent 列表
 
-| Agent | 职责 |
-|:---|:---|
-| Orchestrator | 主控 Agent，理解意图，调度子 Agent |
-| DesignReviewer | 方案评审专家 |
-| CodeReviewer | 代码审查专家 |
-| DeliveryTracker | 交付效能分析师 |
-| LearningAdvisor | 学习顾问（基于错题本生成成长计划） |
+| Agent | 职责 | 是否调用 LLM |
+|:---|:---|:---|
+| Orchestrator | 主控 Agent，理解意图，调度子 Agent | ❌ 关键词匹配 |
+| DesignReviewer | 方案评审专家 | ✅ 每次场景评审一次 |
+| CodeReviewer | 代码审查专家 | ✅ 每个 focus area 一次 |
+| DeliveryTracker | 交付效能分析师 | ❌ 纯规则计算 |
+| LearningAdvisor | 学习顾问（LLM 驱动） | ✅ 含根源分析/验证题目 |
 
 ## 快速开始
 
 ### 1. 环境要求
 
 - Python 3.10+
-- OpenAI API Key
+- OpenAI API Key（或兼容接口）
 
 ### 2. 安装依赖
 
@@ -116,25 +141,25 @@ pip install -r requirements.txt
 ### 3. 配置环境变量
 
 ```bash
-# 复制环境变量模板
 cp .env.example .env
-
-# 编辑 .env 文件，填入你的配置
+# 编辑 .env 文件填入配置
 # OPENAI_API_KEY=your_openai_api_key_here
-# TAPD_API_USER=your_tapd_username
-# ...
 ```
 
 ### 4. 初始化数据库
 
 ```bash
-python -c "from storage.memory_store import init_db; init_db()"
+python -c "from tools.memory_store import init_db; init_db()"
 ```
 
-### 5. 启动 CLI
+### 5. 启动
 
 ```bash
+# CLI 模式
 python main.py scan
+
+# Web 看板
+python main.py dashboard
 ```
 
 ## 使用示例
@@ -163,11 +188,50 @@ python main.py review-mr --mr-id "123" --focus "transaction,multithread"
 python main.py weekly-report
 ```
 
-### 查询错题本
+### 个性化学习建议
 
 ```bash
-python main.py profile --developer "李四"
+python main.py profile --developer "李四" --days 30
 ```
+
+### 查看系统状态
+
+```bash
+python main.py status
+```
+
+## 人效看板
+
+Web 看板基于 FastAPI + Chart.js，提供一站式团队效能可视化和个人提升计划。
+
+### 启动
+
+```bash
+python main.py dashboard
+# 或指定端口
+python main.py dashboard --port 7820 --host 127.0.0.1
+```
+
+### 页面
+
+| 页面 | 地址 | 说明 |
+|:---|:---|:---|
+| 主看板 | `http://127.0.0.1:7820/` | 问题雷达、交付趋势、开发者雷达、LLM 效率面板 |
+| 提升计划 | `http://127.0.0.1:7820/learning` | 开发者下拉选择 + 时间范围 + 生成按钮 |
+
+### 看板组件
+
+- **今日待办**：自动聚合待审 MR、高风险需求、超期需求、需关注人员
+- **问题雷达**：人员负荷、交付效率、代码质量、CR 节奏等异常检测
+- **交付趋势**：交付周期、缺陷率、CR 吞吐量、CR 周转时间
+- **开发者雷达**：5 维能力（技术方案评审/代码质量/缺陷控制/交付效率/CR 响应）
+- **LLM 效率面板**：Token 消耗趋势、Agent 延迟 P50/P95、预估成本、缓存命中率
+- **开发者详情**：issues 列表 + **"生成改进计划"按钮**，支持选择时间范围
+- **个人提升计划**：嵌入主看板或独立页面，含根源分析、学习资源、验证题目
+
+### Demo 模式
+
+未配置 API Key 时，访问 `http://127.0.0.1:7820/demo` 使用 demo 数据库查看界面布局。
 
 ## 配置说明
 
@@ -186,17 +250,39 @@ checks:
     severity: blocker
 ```
 
-### 阈值配置
+### 环境变量
 
-```yaml
-# .techlead-rules/thresholds.yaml
-risk:
-  urgent_days: 3  # 紧急关注：距提测<3天且进度<80%
-  warning_days: 5 # 警告：距提测<5天且进度<50%
+| 变量 | 说明 | 默认值 |
+|:---|:---|:---|
+| `OPENAI_API_KEY` | LLM API 密钥 | 必填 |
+| `LLM_MODEL` | 模型名 | `gpt-4o` |
+| `TRACE_ENABLED` | 是否启用追踪日志 | `true` |
+| `LOG_LEVEL` | 日志级别 | `INFO` |
+| `CACHE_ENABLED` | 是否启用缓存 | `true` |
+| `NOTIFICATION_ENABLED` | 是否启用通知 | `true` |
 
-efficiency:
-  anomaly_threshold: 1.3  # 个人效率 > 团队均值 * 1.3 为异常
-```
+## 可观测性
+
+### Span-based Tracing
+
+每次 LLM 调用和 Agent 执行都写入 `spans` 表（SQLite）+ `traces_*.jsonl`（JSON 冷备份）：
+
+| 指标 | 存储位置 | 查询方式 |
+|:---|:---|:---|
+| Token 消耗 | spans 表 | `SELECT SUM(total_tokens) FROM spans WHERE type='llm_call'` |
+| 延迟 P50/P95 | spans 表 | `SELECT AVG(duration_ms), PERCENTILE...` |
+| 调用链 | spans 表 | `SELECT * FROM spans WHERE trace_id='xxx'` |
+| 缓存命中 | spans 表 | `SELECT cache_hit, COUNT(*) FROM spans GROUP BY cache_hit` |
+| 原始日志 | JSONL 文件 | `grep / jq traces_*.jsonl` |
+
+### Dashboard 可观测 API
+
+| 端点 | 说明 |
+|:---|:---|
+| `GET /api/cost?days=7` | Token 消耗和预估成本汇总 |
+| `GET /api/latency?days=7` | 每个 Agent 的 P50/P95/P99 延迟 |
+| `GET /api/llm-trends?days=30` | 每日调用量和 Token 趋势 |
+| `GET /api/cache-efficiency?days=7` | 缓存命中率和节省的 Token |
 
 ## 开发指南
 
@@ -208,7 +294,7 @@ efficiency:
 
 ### 添加新的 Agent
 
-1. 在 `agents/` 目录创建新的 Agent 类
+1. 在 `agents/` 目录创建新的 Agent 类，继承 `BaseAgent`
 2. 在 `prompts/` 目录添加对应的 System Prompt
 3. 在 `agents/orchestrator.py` 中注册新的 Agent
 
@@ -218,6 +304,23 @@ efficiency:
 pytest tests/
 ```
 
+### 项目结构
+
+```
+techlead-agent/
+├── agents/            # Agent 模块（5 个 Agent）
+├── tools/             # 工具层（TAPD/Git/缓存/规则/记忆/通知）
+├── config/            # 配置管理（Pydantic Settings + YAML）
+├── state/             # Session 管理（人机回环）
+├── utils/             # 日志工具（JSON Lines + 彩色输出）
+├── storage/           # 数据存储（SQLite + JSONL + 缓存文件）
+├── dashboard/         # FastAPI Web 看板 + 模板
+├── prompts/           # System Prompt 模板
+├── tests/             # 测试套件
+├── .techlead-rules/   # YAML 规则文件（场景 + 质量门禁）
+└── main.py            # CLI 入口
+```
+
 ## 演进路线图
 
 - [x] Sprint 1: CLI 交互 + 规则加载 + 三个工作池扫描
@@ -225,8 +328,8 @@ pytest tests/
 - [x] Sprint 3: 人机回环（审批挂起 + 确认唤醒）
 - [x] Sprint 4: 错题本记录
 - [x] Sprint 5: 画像查询
-- [x] Sprint 6: LearningAdvisor Agent
-- [ ] Sprint 7: 可观测性（Trace 日志 + Token 统计 + 看板）
+- [x] Sprint 6: LearningAdvisor Agent（LLM 驱动）
+- [x] Sprint 7: 可观测性（Trace + Token 统计 + 人效看板）
 
 ## 技术选型
 
@@ -234,9 +337,10 @@ pytest tests/
 |:---|:---|
 | LLM | OpenAI GPT-4o / DeepSeek |
 | Agent 框架 | 基于 Python 的自定义多 Agent 架构 |
-| 数据库 | SQLite |
+| 数据库 | SQLite（spans 表 + 错题本 + 团队指标） |
 | CLI | Typer + Rich |
-| 日志 | JSON Lines |
+| Web 看板 | FastAPI + Chart.js |
+| 日志 | JSON Lines（冷备）+ SQLite（热查询） |
 | 配置 | Pydantic Settings + .env |
 
 ## 许可证
