@@ -323,13 +323,19 @@ techlead-agent/
 
 ## 演进路线图
 
-- [x] Sprint 1: CLI 交互 + 规则加载 + 三个工作池扫描
+- [x] Sprint 1: CLI 交互 + 规则加载 + 每日扫描
 - [x] Sprint 2: DesignReviewer + CodeReviewer 完整实现
 - [x] Sprint 3: 人机回环（审批挂起 + 确认唤醒）
-- [x] Sprint 4: 错题本记录
-- [x] Sprint 5: 画像查询
-- [x] Sprint 6: LearningAdvisor Agent（LLM 驱动）
-- [x] Sprint 7: 可观测性（Trace + Token 统计 + 人效看板）
+- [x] Sprint 4: 错题本记录（SQLite + developer_issues 表）
+- [x] Sprint 5: 画像查询 + 团队对比
+- [x] Sprint 6: LearningAdvisor Agent（LLM 驱动根源分析 + 验证题目）
+- [x] Sprint 7: 可观测性（Span-based Tracing + spans 表 + 双写）
+- [x] Sprint 8: 人效看板（FastAPI + Chart.js 主看板）
+- [x] Sprint 9: 个人提升计划页面（嵌入主看板 + 独立页面）
+- [x] Sprint 10: LLM 效率面板（Token 趋势 + 延迟 P50/P95 + 成本估算）
+- [x] Sprint 11: Demo 模式（无 API Key 可预览界面）
+- [ ] Sprint 12: 生产环境（PostgreSQL 支持 + 多团队隔离）
+- [ ] Sprint 13: 规则管理后台（在线编辑 YAML + 版本管理）
 
 ## 技术选型
 
